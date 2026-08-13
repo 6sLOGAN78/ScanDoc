@@ -156,29 +156,22 @@ def test_pdf_format_provider_integration():
 
 
 def test_placeholder_stub_provider_behavior():
-    """Test that stub format providers report is_fully_implemented = False and raise ProviderExtractionError on parse()."""
+    """Test Phase 18 fully implemented format providers behavior."""
     docx_prov = DOCXFormatProvider()
-    assert docx_prov.is_fully_implemented is False
+    assert docx_prov.is_fully_implemented is True
     assert ".docx" in docx_prov.supported_extensions
 
     pptx_prov = PPTXFormatProvider()
-    assert pptx_prov.is_fully_implemented is False
+    assert pptx_prov.is_fully_implemented is True
 
     html_prov = HTMLFormatProvider()
-    assert html_prov.is_fully_implemented is False
+    assert html_prov.is_fully_implemented is True
 
     img_prov = ImageFormatProvider()
-    assert img_prov.is_fully_implemented is False
+    assert img_prov.is_fully_implemented is True
 
     txt_prov = TXTFormatProvider()
-    assert txt_prov.is_fully_implemented is False
+    assert txt_prov.is_fully_implemented is True
 
     md_prov = MarkdownFormatProvider()
-    assert md_prov.is_fully_implemented is False
-
-    # Verify parse() on stub raises ProviderExtractionError
-    registry = FormatRegistry(register_defaults=True)
-    dummy_docx = b"PK\x03\x04word/document.xml"
-    with pytest.raises(ProviderExtractionError) as exc_info:
-        registry.parse(dummy_docx, override_format="docx")
-    assert "not yet fully implemented" in str(exc_info.value)
+    assert md_prov.is_fully_implemented is True

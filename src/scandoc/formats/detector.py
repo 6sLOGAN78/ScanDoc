@@ -94,14 +94,16 @@ class FormatDetector:
         if target_path:
             ext = Path(target_path).suffix.lower()
             if ext in FORMAT_EXTENSION_MAP:
-                fmt_name, mime_type = FORMAT_EXTENSION_MAP[ext]
-                return FormatDetectionResult(
-                    detected_format=fmt_name,
-                    confidence=0.85,
-                    mime_type=mime_type,
-                    extension=ext,
-                    detection_method="extension",
-                )
+                MANDATORY_MAGIC_EXTS = {".pdf", ".png", ".jpg", ".jpeg", ".webp", ".tiff", ".tif", ".docx", ".pptx", ".xlsx", ".zip"}
+                if ext not in MANDATORY_MAGIC_EXTS:
+                    fmt_name, mime_type = FORMAT_EXTENSION_MAP[ext]
+                    return FormatDetectionResult(
+                        detected_format=fmt_name,
+                        confidence=0.85,
+                        mime_type=mime_type,
+                        extension=ext,
+                        detection_method="extension",
+                    )
 
         # Step 5: Content Heuristics (Plain text vs Markdown vs Unknown Binary)
         heur_result = cls._detect_by_content_heuristics(header_bytes)
