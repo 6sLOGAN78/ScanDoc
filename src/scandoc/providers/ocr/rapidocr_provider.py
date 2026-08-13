@@ -19,7 +19,7 @@ from scandoc.providers.ocr.exceptions import (
     OcrProviderUnavailableError,
     UnsupportedImageFormatError,
 )
-from scandoc.providers.ocr.models import OcrConfig, OCRResult, OCRTextRegion
+from scandoc.providers.ocr.models import OcrCapability, OcrProviderConfig, OCRResult, OCRTextRegion
 
 logger = logging.getLogger("scandoc.providers.ocr.rapidocr")
 
@@ -32,9 +32,9 @@ class RapidOCRProvider(BaseOcrProvider):
     All RapidOCR-specific dependencies remain strictly isolated inside this provider module.
     """
 
-    def __init__(self, config: Optional[OcrConfig] = None):
+    def __init__(self, config: Optional[OcrProviderConfig] = None):
         self._engine = None
-        self._config = config or OcrConfig()
+        self._config = config or OcrProviderConfig(provider_name="rapidocr", model_name="PP-OCRv4")
         self._initialized = False
 
     @property
@@ -43,11 +43,25 @@ class RapidOCRProvider(BaseOcrProvider):
 
     @property
     def model_id(self) -> str:
-        return "PP-OCRv4"
+        return self._config.model_name or "PP-OCRv4"
 
     @property
     def supported_languages(self) -> List[str]:
         return ["en", "ch", "es", "fr", "de", "ja", "ko"]
+
+    @property
+    def capabilities(self) -> OcrCapability:
+        return OcrCapability(
+            provider_id=self.provider_id,
+            is_local=True,
+            supports_cpu=True,
+            supports_gpu=True,
+            supports_batch=False,
+            supports_confidence=True,
+            supports_polygons=True,
+            supports_orientation=True,
+            supported_languages=self.supported_languages,
+        )
 
     @property
     def is_available(self) -> bool:
@@ -62,7 +76,7 @@ class RapidOCRProvider(BaseOcrProvider):
             except ImportError:
                 return False
 
-    def initialize(self, config: Optional[OcrConfig] = None) -> None:
+    def initialize(self, config: Optional[OcrProviderConfig] = None) -> None:
         if config is not None:
             self._config = config
 
@@ -87,7 +101,7 @@ class RapidOCRProvider(BaseOcrProvider):
     def process_image(
         self,
         image_input: Union[str, Path, bytes, bytearray, BinaryIO],
-        config: Optional[OcrConfig] = None,
+        config: Optional[OcrProviderConfig] = None,
     ) -> OCRResult:
         if not self._initialized:
             self.initialize(config=config)
@@ -126,12 +140,12 @@ class RapidOCRProvider(BaseOcrProvider):
                 result = ocr_output[0]
             else:
                 result = ocr_output
+
         regions: List[OCRTextRegion] = []
         full_text_parts: List[str] = []
 
         if result:
             for reg_idx, item in enumerate(result):
-                # item structure in RapidOCR: [polygon_pts, text, confidence]
                 try:
                     poly_pts, text_str, conf = item[0], str(item[1]), float(item[2])
                 except (IndexError, TypeError, ValueError):
@@ -142,7 +156,6 @@ class RapidOCRProvider(BaseOcrProvider):
 
                 full_text_parts.append(text_str)
 
-                # Extract polygon points and calculate normalized bbox
                 polygon: List[Point2D] = []
                 min_x, min_y = float("inf"), float("inf")
                 max_x, max_y = float("-inf"), float("-inf")
@@ -217,7 +230,6 @@ class RapidOCRProvider(BaseOcrProvider):
             if len(img_bytes) == 0:
                 raise InvalidImageError("Input image source is 0 bytes")
 
-            # Open image with PIL to verify format and read dimensions
             with Image.open(io.BytesIO(img_bytes)) as pil_img:
                 width, height = pil_img.size
                 if pil_img.format and pil_img.format.upper() not in (
