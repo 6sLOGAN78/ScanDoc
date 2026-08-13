@@ -8,7 +8,9 @@ Verifies:
 3. Strict zero-dependency isolation (no imports of PyTorch, ONNX, OpenCV, OCR libraries, or Transformers).
 """
 
+import os
 import sys
+import subprocess
 import pytest
 from scandoc.core import DocumentIR
 
@@ -138,20 +140,15 @@ def test_strict_dependency_isolation():
     Verify that importing scandoc.core or scandoc.models does NOT import or depend on
     heavy ML runtime frameworks or OCR libraries.
     """
-    forbidden_modules = [
-        "torch",
-        "onnxruntime",
-        "cv2",
-        "rapidocr",
-        "rapidocr_onnxruntime",
-        "pytesseract",
-        "easyocr",
-        "paddleocr",
-        "transformers",
-        "pycuda",
-    ]
-    
-    loaded_modules = set(sys.modules.keys())
-    for forbidden in forbidden_modules:
-        matching = [mod for mod in loaded_modules if mod == forbidden or mod.startswith(forbidden + ".")]
-        assert len(matching) == 0, f"Core IR unexpectedly imported forbidden module: {matching}"
+    code = (
+        "import sys; "
+        "import scandoc.models; "
+        "import scandoc.core; "
+        "forbidden = ['torch', 'onnxruntime', 'cv2', 'rapidocr', 'rapidocr_onnxruntime', 'pytesseract', 'easyocr', 'paddleocr', 'transformers', 'pycuda']; "
+        "loaded = set(sys.modules.keys()); "
+        "found = [f for f in forbidden if any(m == f or m.startswith(f + '.') for m in loaded)]; "
+        "assert len(found) == 0, f'Core IR unexpectedly imported forbidden module: {found}'"
+    )
+    env = dict(os.environ, PYTHONPATH="src:tests")
+    res = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env)
+    assert res.returncode == 0, f"Dependency isolation check failed: {res.stderr}"
