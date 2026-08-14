@@ -27,7 +27,13 @@ class AssetResolver:
         Resolve image bytes into a URI (base64 or file path) and return (src_uri, warning_or_asset_path).
         """
         if not image_bytes:
-            return f"[Missing Image Asset: {asset_id}]", f"Image asset '{asset_id}' has no binary content."
+            svg_placeholder = (
+                f"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='80'>"
+                f"<rect width='100%' height='100%' fill='%23f3f4f6' rx='4'/>"
+                f"<text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' "
+                f"font-family='sans-serif' font-size='12' fill='%236b7280'>[Missing Image: {asset_id}]</text></svg>"
+            )
+            return svg_placeholder, f"Image asset '{asset_id}' has no binary content."
 
         if options.image_strategy == ImageHandlingStrategy.EMBED_BASE64:
             b64_str = base64.b64encode(image_bytes).decode("ascii")
