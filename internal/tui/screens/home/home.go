@@ -3,56 +3,78 @@ package home
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"scandoc/internal/tui/state"
 	"scandoc/internal/tui/styles"
 )
 
-type MenuItem struct {
-	Key          string
-	Title        string
-	TargetScreen string
-}
-
-func GetMenuItems() []MenuItem {
-	return []MenuItem{
-		{Key: "1", Title: "Open File", TargetScreen: state.ScreenFilePicker},
-		{Key: "2", Title: "Open Folder", TargetScreen: state.ScreenFolderPicker},
-		{Key: "3", Title: "Document Inspector", TargetScreen: state.ScreenDocumentInspector},
-		{Key: "4", Title: "Model Manager", TargetScreen: state.ScreenModelManager},
-		{Key: "5", Title: "Pipeline Configuration", TargetScreen: state.ScreenPipelineConfig},
-		{Key: "6", Title: "Benchmark", TargetScreen: state.ScreenBenchmark},
-		{Key: "7", Title: "Server", TargetScreen: state.ScreenServerManager},
-		{Key: "8", Title: "Settings", TargetScreen: state.ScreenSettings},
-		{Key: "9", Title: "Help", TargetScreen: state.ScreenHelp},
-		{Key: "Q", Title: "Quit", TargetScreen: ""},
-	}
-}
-
 func Render(st *state.AppState, selectedIdx int) string {
-	items := GetMenuItems()
-
 	var b strings.Builder
-	b.WriteString(styles.HeaderStyle.Render(" scanDOC Document Intelligence Engine v0.1.0 ") + "\n\n")
-
-	for i, item := range items {
-		if i == selectedIdx {
-			b.WriteString(styles.ActiveItemStyle.Render(fmt.Sprintf("[%s]  › %-35s", item.Key, item.Title)) + "\n")
-		} else {
-			b.WriteString(styles.NormalItemStyle.Render(fmt.Sprintf("[%s]    %-35s", item.Key, item.Title)) + "\n")
+	
+	// Dashboard Header
+	b.WriteString(styles.TitleStyle.Render("Dashboard") + "\n\n")
+	
+	// System Status
+	offlineBadge := styles.BadgeSuccess.Render("✓ ONLINE")
+	if st.IsOffline() {
+		offlineBadge = styles.BadgeWarning.Render("! AIR-GAPPED")
+	}
+	
+	b.WriteString(styles.SecondaryStyle.Render(fmt.Sprintf("Status: %s   Device: %s   Precision: %s", 
+		offlineBadge, 
+		strings.ToUpper(st.DeviceType),
+		strings.ToUpper(st.PrecisionMode),
+	)) + "\n\n")
+	
+	sepWidth := st.WindowWidth - 25
+	if sepWidth < 10 {
+		sepWidth = 50
+	}
+	
+	// Recent Documents
+	b.WriteString(styles.SectionStyle.Render("Recent") + "\n")
+	b.WriteString(styles.MutedStyle.Render(strings.Repeat("─", sepWidth)) + "\n")
+	
+	if len(st.RecentDocuments) == 0 {
+		b.WriteString(styles.MutedStyle.Render("  No recent documents") + "\n")
+	} else {
+		for i, doc := range st.RecentDocuments {
+			if i > 4 {
+				break
+			}
+			age := time.Since(doc.Timestamp).Round(time.Minute)
+			statusStr := doc.Status
+			if statusStr == "" {
+				statusStr = "Ready"
+			}
+			
+			// Format row
+			row := fmt.Sprintf("  %-30s %-15s %s", doc.Name, statusStr, age.String()+" ago")
+			b.WriteString(styles.NormalItemStyle.Render(row) + "\n")
 		}
 	}
-
 	b.WriteString("\n")
 
-	offlineBadge := styles.BadgeGreen.Render("● ONLINE READY")
-	if st.IsOffline() {
-		offlineBadge = styles.BadgeAmber.Render("● AIR-GAPPED OFFLINE")
+	// Active Jobs
+	b.WriteString(styles.SectionStyle.Render("Active jobs") + "\n")
+	b.WriteString(styles.MutedStyle.Render(strings.Repeat("─", sepWidth)) + "\n")
+	
+	if st.ProcessingStatus == "processing" {
+		row := fmt.Sprintf("  %-30s %-15s %d%%", st.ActiveDocumentName, st.ProgressStage, int(st.ProgressPct))
+		b.WriteString(styles.NormalItemStyle.Render(row) + "\n")
+	} else {
+		b.WriteString(styles.MutedStyle.Render("  No active jobs") + "\n")
 	}
+	b.WriteString("\n")
 
-	deviceInfo := fmt.Sprintf("Local • %s • Device: %s", offlineBadge, strings.ToUpper(st.DeviceType))
-	footer := styles.FooterStyle.Render(deviceInfo)
-	b.WriteString(footer + "\n")
+	// Quick Actions
+	b.WriteString(styles.SectionStyle.Render("Quick actions") + "\n")
+	b.WriteString(styles.MutedStyle.Render(strings.Repeat("─", sepWidth)) + "\n")
+	b.WriteString(styles.NormalItemStyle.Render("  Enter  Navigate workspace"))
+	b.WriteString(styles.NormalItemStyle.Render("  Ctrl+P Command palette"))
+	b.WriteString(styles.NormalItemStyle.Render("  Tab    Focus sidebar"))
+	b.WriteString("\n")
 
-	return styles.PanelStyle.Render(b.String())
+	return b.String()
 }

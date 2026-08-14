@@ -5,57 +5,99 @@ import (
 )
 
 var (
-	// Theme Colors
-	PrimaryColor    = lipgloss.Color("#7D56F4") // Purple Accent
-	SecondaryColor  = lipgloss.Color("#22C55E") // Online Green
-	WarningColor    = lipgloss.Color("#F59E0B") // Amber Warning
-	ErrorColor      = lipgloss.Color("#EF4444") // Red Error
-	MutedColor      = lipgloss.Color("#6B7280") // Grey Muted
-	BgDark          = lipgloss.Color("#111827") // Dark Container
-	TextHighlight   = lipgloss.Color("#38BDF8") // Sky Blue Highlight
+	// Premium Native Terminal Palette
+	// Restrained, terminal-compatible colors
+	BgColor         = lipgloss.Color("0")   // Default terminal bg
+	PrimaryText     = lipgloss.Color("252") // Soft white
+	SecondaryText   = lipgloss.Color("245") // Gray
+	MutedText       = lipgloss.Color("240") // Dim gray
+	SelectionBg     = lipgloss.Color("236") // Subtle background highlight
+	ActiveBorder    = lipgloss.Color("245")
+	InactiveBorder  = lipgloss.Color("237")
 
-	// Layout & Container Styles
-	HeaderStyle = lipgloss.NewStyle().
+	// Semantic colors
+	AccentColor     = lipgloss.Color("110") // Muted blue
+	SuccessColor    = lipgloss.Color("114") // Muted green
+	WarningColor    = lipgloss.Color("179") // Muted yellow
+	ErrorColor      = lipgloss.Color("167") // Muted red
+	InfoColor       = lipgloss.Color("109") // Muted cyan
+
+	// Typography & Hierarchy
+	TitleStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(PrimaryColor).
-			Padding(0, 1).
-			MarginBottom(1)
+			Foreground(PrimaryText)
 
-	FooterStyle = lipgloss.NewStyle().
-			Foreground(MutedColor).
-			Padding(0, 1).
-			MarginTop(1)
+	SectionStyle = lipgloss.NewStyle().
+			Foreground(AccentColor).
+			Bold(true)
 
-	PanelStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(PrimaryColor).
-			Padding(1, 2)
+	PrimaryStyle = lipgloss.NewStyle().
+			Foreground(PrimaryText)
 
-	ActiveItemStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(TextHighlight).
+	SecondaryStyle = lipgloss.NewStyle().
+			Foreground(SecondaryText)
+
+	MutedStyle = lipgloss.NewStyle().
+			Foreground(MutedText)
+
+	// Layout and Panels
+	// Sidebar uses a subtle right border
+	SidebarStyle = lipgloss.NewStyle().
+			Border(lipgloss.NormalBorder(), false, true, false, false).
+			BorderForeground(InactiveBorder).
+			PaddingRight(1).
 			PaddingLeft(1)
 
+	SidebarFocusedStyle = lipgloss.NewStyle().
+			Border(lipgloss.NormalBorder(), false, true, false, false).
+			BorderForeground(ActiveBorder).
+			PaddingRight(1).
+			PaddingLeft(1)
+
+	MainContentStyle = lipgloss.NewStyle().
+			PaddingLeft(2)
+
+	// Lists and Selections
+	// Selection is a subtle background, not neon
+	SelectedItemStyle = lipgloss.NewStyle().
+			Foreground(PrimaryText).
+			Background(SelectionBg).
+			PaddingLeft(1).
+			PaddingRight(1).
+			Bold(true)
+
 	NormalItemStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#E5E7EB")).
-			PaddingLeft(3)
+			Foreground(SecondaryText).
+			PaddingLeft(1)
 
-	BadgeGreen = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(SecondaryColor).
-			Padding(0, 1)
+	// Breadcrumbs / Header
+	HeaderStyle = lipgloss.NewStyle().
+			Foreground(SecondaryText).
+			PaddingBottom(1)
 
-	BadgeAmber = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(WarningColor).
-			Padding(0, 1)
+	// Command Bar / Footer
+	FooterStyle = lipgloss.NewStyle().
+			Foreground(MutedText).
+			PaddingTop(1)
 
-	LogBoxStyle = lipgloss.NewStyle().
-			Border(lipgloss.NormalBorder()).
-			BorderForeground(MutedColor).
-			Padding(0, 1).
-			Height(6)
+	// Badges
+	BadgeSuccess = lipgloss.NewStyle().Foreground(SuccessColor)
+	BadgeWarning = lipgloss.NewStyle().Foreground(WarningColor)
+	BadgeError   = lipgloss.NewStyle().Foreground(ErrorColor)
+	BadgeInfo    = lipgloss.NewStyle().Foreground(InfoColor)
+	BadgeAccent  = lipgloss.NewStyle().Foreground(AccentColor)
+
+	// Tables
+	TableHeaderStyle = lipgloss.NewStyle().
+			Foreground(MutedText).
+			Bold(false).
+			Underline(true)
+
+	TableRowStyle = lipgloss.NewStyle().
+			Foreground(PrimaryText)
+			
+	// Migration aliases
+	ActiveItemStyle = SelectedItemStyle
+	PanelStyle = lipgloss.NewStyle()
+	SeparatorStyle = lipgloss.NewStyle().Foreground(MutedText)
 )

@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"scandoc/internal/tui/backend"
 	"scandoc/internal/tui/commands"
@@ -24,7 +26,49 @@ import (
 	"scandoc/internal/tui/screens/server"
 	"scandoc/internal/tui/screens/settings"
 	"scandoc/internal/tui/state"
+	"scandoc/internal/tui/styles"
 )
+
+type FocusPanel int
+
+const (
+	FocusSidebar FocusPanel = iota
+	FocusContent
+)
+
+type SidebarItem struct {
+	Title  string
+	Screen string
+}
+
+type SidebarGroup struct {
+	Title string
+	Items []SidebarItem
+}
+
+var SidebarData = []SidebarGroup{
+	{
+		Title: "WORKSPACE",
+		Items: []SidebarItem{
+			{"Dashboard", state.ScreenHome},
+			{"Documents", state.ScreenFilePicker},
+			{"Jobs", state.ScreenProcessing},
+			{"Inspector", state.ScreenDocumentInspector},
+			{"Export", state.ScreenExport},
+		},
+	},
+	{
+		Title: "SYSTEM",
+		Items: []SidebarItem{
+			{"Models", state.ScreenModelManager},
+			{"Pipeline", state.ScreenPipelineConfig},
+			{"Benchmark", state.ScreenBenchmark},
+			{"Server", state.ScreenServerManager},
+			{"Settings", state.ScreenSettings},
+			{"Help", state.ScreenHelp},
+		},
+	},
+}
 
 type MainModel struct {
 	State            *state.AppState
@@ -37,6 +81,9 @@ type MainModel struct {
 	ModelList        []backend.ModelInfo
 	BenchmarkResults map[string]any
 	IsBenchmarking   bool
+
+	FocusedPanel FocusPanel
+	SidebarIndex int // flatted index
 }
 
 func NewMainModel(ctrl *controller.Controller) *MainModel {
@@ -49,6 +96,8 @@ func NewMainModel(ctrl *controller.Controller) *MainModel {
 		Commands:         commands.DefaultCommandRegistry,
 		SelectedIndex:    0,
 		BenchmarkResults: make(map[string]any),
+		FocusedPanel:     FocusContent, // default focus main
+		SidebarIndex:     0,
 	}
 	m.refreshFileItems()
 	m.refreshModelList()
@@ -73,6 +122,14 @@ func (m *MainModel) Init() tea.Cmd {
 	return nil
 }
 
+func (m *MainModel) getFlatSidebar() []SidebarItem {
+	var items []SidebarItem
+	for _, g := range SidebarData {
+		items = append(items, g.Items...)
+	}
+	return items
+}
+
 func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -93,11 +150,61 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if k == "ctrl+c" {
 			return m, tea.Quit
 		}
-		if k == "ctrl+p" || k == ">" {
+		if k == "ctrl+p" {
 			m.State.NavigateTo(state.ScreenCommandPalette)
 			m.SelectedIndex = 0
+			m.FocusedPanel = FocusContent
 			return m, nil
 		}
+		
+		// Focus toggle
+		if k == "tab" && m.State.CurrentScreen != state.ScreenCommandPalette {
+			if m.FocusedPanel == FocusSidebar {
+				m.FocusedPanel = FocusContent
+			} else {
+				m.FocusedPanel = FocusSidebar
+				// synchronize sidebar index with current screen
+				flat := m.getFlatSidebar()
+				for i, item := range flat {
+					if item.Screen == m.State.CurrentScreen {
+						m.SidebarIndex = i
+						break
+					}
+				}
+			}
+			return m, nil
+		}
+
+		if m.FocusedPanel == FocusSidebar {
+			flat := m.getFlatSidebar()
+			switch k {
+			case "up", "k":
+				if m.SidebarIndex > 0 {
+					m.SidebarIndex--
+				}
+			case "down", "j":
+				if m.SidebarIndex < len(flat)-1 {
+					m.SidebarIndex++
+				}
+			case "enter", " ":
+				target := flat[m.SidebarIndex].Screen
+				m.State.NavigateTo(target)
+				m.SelectedIndex = 0
+				m.FocusedPanel = FocusContent
+				if target == state.ScreenFilePicker || target == state.ScreenFolderPicker {
+					m.refreshFileItems()
+				}
+				if target == state.ScreenModelManager {
+					m.refreshModelList()
+				}
+			case "l", "right":
+				m.FocusedPanel = FocusContent
+			case "q":
+				return m, tea.Quit
+			}
+			return m, nil
+		}
+
 		if k == "esc" {
 			if m.State.CurrentScreen == state.ScreenHome {
 				return m, tea.Quit
@@ -107,60 +214,14 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Screen-Specific Key Handling
+		// Content Navigation
 		switch m.State.CurrentScreen {
 		case state.ScreenHome:
-			items := home.GetMenuItems()
 			switch k {
-			case "up", "w", "k":
-				if m.SelectedIndex > 0 {
-					m.SelectedIndex--
-				}
-			case "down", "s", "j":
-				if m.SelectedIndex < len(items)-1 {
-					m.SelectedIndex++
-				}
-			case "enter", " ":
-				target := items[m.SelectedIndex].TargetScreen
-				if target == "" {
-					return m, tea.Quit
-				}
-				m.State.NavigateTo(target)
-				m.SelectedIndex = 0
-				m.refreshFileItems()
-			case "1":
-				m.State.NavigateTo(state.ScreenFilePicker)
-				m.SelectedIndex = 0
-				m.refreshFileItems()
-			case "2":
-				m.State.NavigateTo(state.ScreenFolderPicker)
-				m.SelectedIndex = 0
-				m.refreshFileItems()
-			case "3":
-				m.State.NavigateTo(state.ScreenDocumentInspector)
-				m.SelectedIndex = 0
-			case "4":
-				m.State.NavigateTo(state.ScreenModelManager)
-				m.SelectedIndex = 0
-				m.refreshModelList()
-			case "5":
-				m.State.NavigateTo(state.ScreenPipelineConfig)
-				m.SelectedIndex = 0
-			case "6":
-				m.State.NavigateTo(state.ScreenBenchmark)
-				m.SelectedIndex = 0
-			case "7":
-				m.State.NavigateTo(state.ScreenServerManager)
-				m.SelectedIndex = 0
-			case "8":
-				m.State.NavigateTo(state.ScreenSettings)
-				m.SelectedIndex = 0
-			case "9":
-				m.State.NavigateTo(state.ScreenHelp)
-				m.SelectedIndex = 0
-			case "q", "0":
+			case "q":
 				return m, tea.Quit
 			}
+			// Home is now mostly static dashboard
 
 		case state.ScreenFilePicker, state.ScreenFolderPicker:
 			switch k {
@@ -176,18 +237,14 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				step := m.State.WindowHeight - 12
 				if step < 5 { step = 10 }
 				m.SelectedIndex -= step
-				if m.SelectedIndex < 0 {
-					m.SelectedIndex = 0
-				}
+				if m.SelectedIndex < 0 { m.SelectedIndex = 0 }
 			case "pgdown":
 				step := m.State.WindowHeight - 12
 				if step < 5 { step = 10 }
 				m.SelectedIndex += step
 				if m.SelectedIndex >= len(m.FileItems) {
 					m.SelectedIndex = len(m.FileItems) - 1
-					if m.SelectedIndex < 0 {
-						m.SelectedIndex = 0
-					}
+					if m.SelectedIndex < 0 { m.SelectedIndex = 0 }
 				}
 			case " ":
 				if len(m.FileItems) > 0 {
@@ -221,7 +278,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.State.NavigateTo(state.ScreenProcessing)
 					}
 				}
-			case "b", "backspace":
+			case "b", "backspace", "h", "left":
 				parent := filepath.Dir(m.State.CurrentDir)
 				m.State.CurrentDir = parent
 				m.refreshFileItems()
@@ -379,7 +436,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.State.SearchQuery = m.State.SearchQuery[:len(m.State.SearchQuery)-1]
 				}
 			case "enter":
-				if len(cmds) > 0 {
+				if len(cmds) > 0 && m.SelectedIndex < len(cmds) {
 					target := cmds[m.SelectedIndex].TargetScreen
 					if target != "" {
 						m.State.NavigateTo(target)
@@ -398,33 +455,82 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m *MainModel) renderSidebar() string {
+	var b strings.Builder
+	
+	// App Title
+	b.WriteString(styles.TitleStyle.Render("scanDOC") + "\n\n")
+
+	flatIdx := 0
+	for _, group := range SidebarData {
+		b.WriteString(styles.SectionStyle.Render(group.Title) + "\n")
+		for _, item := range group.Items {
+			prefix := "  "
+			if m.FocusedPanel == FocusSidebar && flatIdx == m.SidebarIndex {
+				prefix = "> "
+				b.WriteString(styles.SelectedItemStyle.Render(fmt.Sprintf("%s%-14s", prefix, item.Title)) + "\n")
+			} else if item.Screen == m.State.CurrentScreen {
+				// highlight current screen if sidebar not focused
+				b.WriteString(styles.PrimaryStyle.Render(fmt.Sprintf("  %-14s", item.Title)) + "\n")
+			} else {
+				b.WriteString(styles.NormalItemStyle.Render(fmt.Sprintf("  %-14s", item.Title)) + "\n")
+			}
+			flatIdx++
+		}
+		b.WriteString("\n")
+	}
+
+	b.WriteString(styles.MutedStyle.Render(strings.Repeat("─", 16)) + "\n")
+	b.WriteString(styles.SecondaryStyle.Render("project-name") + "\n")
+	b.WriteString(styles.MutedStyle.Render(strings.Repeat("─", 16)) + "\n\n")
+	b.WriteString(styles.MutedStyle.Render("? Help\nq Quit"))
+
+	style := styles.SidebarStyle
+	if m.FocusedPanel == FocusSidebar {
+		style = styles.SidebarFocusedStyle
+	}
+
+	// Fix sidebar height if possible
+	return style.Height(m.Height - 2).Render(b.String())
+}
+
 func (m *MainModel) View() string {
+	if m.Width < 20 || m.Height < 10 {
+		return "Terminal too small"
+	}
+
+	var mainContent string
 	switch m.State.CurrentScreen {
 	case state.ScreenHome:
-		return home.Render(m.State, m.SelectedIndex)
+		mainContent = home.Render(m.State, m.SelectedIndex)
 	case state.ScreenFilePicker, state.ScreenFolderPicker:
-		return filepicker.Render(m.State, m.FileItems, m.SelectedIndex)
+		mainContent = filepicker.Render(m.State, m.FileItems, m.SelectedIndex)
 	case state.ScreenPipelineConfig:
-		return pipeline.Render(m.State, m.SelectedIndex)
+		mainContent = pipeline.Render(m.State, m.SelectedIndex)
 	case state.ScreenProcessing:
-		return processing.Render(m.State)
+		mainContent = processing.Render(m.State)
 	case state.ScreenDocumentInspector:
-		return document.Render(m.State, m.SelectedIndex)
+		mainContent = document.Render(m.State, m.SelectedIndex)
 	case state.ScreenModelManager:
-		return models.Render(m.State, m.ModelList, m.SelectedIndex)
+		mainContent = models.Render(m.State, m.ModelList, m.SelectedIndex)
 	case state.ScreenBenchmark:
-		return benchmark.Render(m.State, m.BenchmarkResults, m.IsBenchmarking)
+		mainContent = benchmark.Render(m.State, m.BenchmarkResults, m.IsBenchmarking)
 	case state.ScreenExport:
-		return export.Render(m.State, m.SelectedIndex)
+		mainContent = export.Render(m.State, m.SelectedIndex)
 	case state.ScreenServerManager:
-		return server.Render(m.State)
+		mainContent = server.Render(m.State)
 	case state.ScreenSettings:
-		return settings.Render(m.State, m.SelectedIndex)
+		mainContent = settings.Render(m.State, m.SelectedIndex)
 	case state.ScreenHelp:
-		return help.Render(m.State)
+		mainContent = help.Render(m.State)
 	case state.ScreenCommandPalette:
-		return commandpalette.Render(m.State, m.SelectedIndex)
+		mainContent = commandpalette.Render(m.State, m.SelectedIndex)
 	default:
-		return home.Render(m.State, m.SelectedIndex)
+		mainContent = home.Render(m.State, m.SelectedIndex)
 	}
+
+	mainContent = styles.MainContentStyle.Width(m.Width - 22).Height(m.Height - 2).Render(mainContent)
+
+	layout := lipgloss.JoinHorizontal(lipgloss.Top, m.renderSidebar(), mainContent)
+	return layout
 }
