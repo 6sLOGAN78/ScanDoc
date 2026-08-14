@@ -2,6 +2,7 @@
 Agentic Document Routing & Orchestration Subsystem for scanDOC.
 """
 
+from scandoc.agent.classifier import ClassificationResult, DocumentCategoryType, DocumentClassifier
 from scandoc.agent.document_agent import DocumentAgent
 from scandoc.agent.exceptions import (
     AgentCancelledError,
@@ -18,11 +19,16 @@ from scandoc.agent.inspector import (
 )
 from scandoc.agent.models import AgentConfig, DecisionTrace, PagePlan, ProcessingPlan
 from scandoc.agent.planner import BasePlanningModel, DeterministicPlanner
+from scandoc.agent.routing import AdaptiveRoutingEngine
 from scandoc.agent.taxonomy import AgentState, Capability, PrivacyPolicy
 from scandoc.agent.validator import AgentPlanValidator
 
 __all__ = [
     "DocumentAgent",
+    "DocumentClassifier",
+    "DocumentCategoryType",
+    "ClassificationResult",
+    "AdaptiveRoutingEngine",
     "AgentConfig",
     "PagePlan",
     "ProcessingPlan",

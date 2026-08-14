@@ -1,11 +1,12 @@
 """
-Unit and integration test suite for Phase 16: Agentic Document Routing & Orchestration.
+Unit and integration test suite for Phase 16 & Phase 35: Agentic Document Routing & Orchestration.
 """
 
 import tempfile
 import pytest
 
 from scandoc.agent import (
+    AdaptiveRoutingEngine,
     AgentCancelledError,
     AgentConfig,
     AgentDocumentInspector,
@@ -13,15 +14,19 @@ from scandoc.agent import (
     AgentPlanValidator,
     AgentState,
     Capability,
+    ClassificationResult,
     DecisionTrace,
     DeterministicPlanner,
     DocumentAgent,
+    DocumentCategoryType,
+    DocumentClassifier,
     PagePlan,
     PrivacyPolicy,
     ProcessingPlan,
 )
 from scandoc.models import DocumentIR
 from scandoc.models.geometry import BoundingBox
+from scandoc.pipelines import DocumentPipeline, OrderingMode, PipelineConfig
 from scandoc.providers.ocr.models import OCRResult, OCRTextRegion
 
 
@@ -113,3 +118,35 @@ def test_agent_cancellation():
 
     with pytest.raises(AgentCancelledError):
         agent.process(b"Sample payload for cancellation test")
+
+
+# Phase 35 Tests: Dynamic Document Classification & Adaptive Routing Engine
+
+def test_document_classification_categories():
+    """Test DocumentClassifier classifying digital PDF, scanned document, forms, and technical reports."""
+    res_text = DocumentClassifier.classify(b"Digital PDF text payload content")
+    assert isinstance(res_text, ClassificationResult)
+    assert res_text.category in (DocumentCategoryType.DIGITAL_PDF, DocumentCategoryType.TECHNICAL_REPORT)
+    assert 0.0 <= res_text.overall_complexity <= 1.0
+    assert res_text.recommended_routing in ("fast_path", "deep_ml", "vlm_fallback")
+
+
+def test_adaptive_routing_engine_fast_path():
+    """Test AdaptiveRoutingEngine fast-path native extraction for digital text."""
+    engine = AdaptiveRoutingEngine()
+    doc_ir, traces, telemetry = engine.route_document(b"Digital PDF text content")
+
+    assert isinstance(doc_ir, DocumentIR)
+    assert len(traces) >= 1
+    assert telemetry["routing_mode"] in ("fast_path", "deep_ml")
+    assert telemetry["total_latency_ms"] >= 0.0
+
+
+def test_document_pipeline_adaptive_mode():
+    """Test DocumentPipeline executing with routing_mode='adaptive'."""
+    pipe = DocumentPipeline(config=PipelineConfig(routing_mode="adaptive"))
+    res = pipe.process(b"Sample text for adaptive pipeline processing.")
+
+    assert res.status == "success"
+    assert res.document_ir is not None
+    assert res.metrics.documents_processed == 1

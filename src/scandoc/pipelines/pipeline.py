@@ -9,6 +9,7 @@ import time
 from typing import AsyncGenerator, Generator, List, Optional, Union
 
 from scandoc.agent.document_agent import DocumentAgent
+from scandoc.agent.routing import AdaptiveRoutingEngine
 from scandoc.analysis.layout_analyzer import LayoutAnalyzer
 from scandoc.exporters.registry import ExporterRegistry, default_exporter_registry
 from scandoc.ingestion.ingestor import DocumentIngestor
@@ -36,6 +37,7 @@ class DocumentPipeline:
         self.config = config or PipelineConfig()
         self.ingestor = ingestor or DocumentIngestor()
         self.agent = agent or DocumentAgent()
+        self.routing_engine = AdaptiveRoutingEngine()
         self.exporter_registry = exporter_registry or default_exporter_registry
 
     def process(
@@ -51,16 +53,19 @@ class DocumentPipeline:
         errors: List[str] = []
 
         try:
-            # 1. Ingestion Stage
-            doc_ir = self.ingestor.ingest(source, file_name=file_name)
-            doc_id = doc_ir.metadata.name or doc_id
+            # 1. Check if Adaptive Routing Mode is enabled
+            if self.config.routing_mode == "adaptive" or self.config.ordering_mode == OrderingMode.ADAPTIVE:
+                doc_ir, traces, telemetry = self.routing_engine.route_document(source, file_name=file_name)
+                doc_id = doc_ir.metadata.name or doc_id
+            else:
+                # Standard Pipeline Path
+                doc_ir = self.ingestor.ingest(source, file_name=file_name)
+                doc_id = doc_ir.metadata.name or doc_id
+                plan = self.agent.plan(source)
 
-            # 2. Agentic Routing / Plan Stage
-            plan = self.agent.plan(source)
-
-            # 3. Layout & Structure Analysis Stage
-            for page in doc_ir.pages:
-                LayoutAnalyzer.analyze_page(page, page_width=page.width, page_height=page.height)
+                # Layout & Structure Analysis Stage
+                for page in doc_ir.pages:
+                    LayoutAnalyzer.analyze_page(page, page_width=page.width, page_height=page.height)
 
             # 4. Optional Exporter Stage
             exported_content = None

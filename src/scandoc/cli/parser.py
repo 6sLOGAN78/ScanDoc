@@ -45,6 +45,9 @@ def create_parser() -> argparse.ArgumentParser:
     convert_parser.add_argument("--overwrite", action="store_true", help="Overwrite existing output files")
     convert_parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose diagnostic output")
     convert_parser.add_argument("-q", "--quiet", action="store_true", help="Suppress non-essential progress output")
+    convert_parser.add_argument(
+        "--routing-mode", default="adaptive", choices=["adaptive", "fast", "deep", "fallback"], help="Agentic routing strategy ('adaptive', 'fast', 'deep', 'fallback')"
+    )
     convert_parser.add_argument("--json", action="store_true", help="Output machine-readable JSON summary")
 
     # 2. INSPECT Subcommand

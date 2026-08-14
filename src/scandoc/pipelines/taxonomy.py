@@ -11,6 +11,7 @@ class OrderingMode(str, Enum):
     """
     ORDERED = "ordered"
     COMPLETION_ORDER = "completion_order"
+    ADAPTIVE = "adaptive"
 
 
 class PipelineStage(str, Enum):
