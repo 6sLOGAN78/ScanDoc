@@ -59,6 +59,11 @@ layout = [
     "pillow>=9.0.0",
     "numpy>=1.21.0",
 ]
+table = [
+    "onnxruntime>=1.16.0",
+    "pillow>=9.0.0",
+    "numpy>=1.21.0",
+]
 server = [
     "fastapi>=0.100.0",
     "uvicorn>=0.20.0",
