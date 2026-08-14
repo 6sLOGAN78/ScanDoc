@@ -175,7 +175,18 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "space":
 				if len(m.FileItems) > 0 {
 					p := m.FileItems[m.SelectedIndex].Path
-					m.State.SelectedPaths = append(m.State.SelectedPaths, p)
+					found := -1
+					for i, sp := range m.State.SelectedPaths {
+						if sp == p {
+							found = i
+							break
+						}
+					}
+					if found >= 0 {
+						m.State.SelectedPaths = append(m.State.SelectedPaths[:found], m.State.SelectedPaths[found+1:]...)
+					} else {
+						m.State.SelectedPaths = append(m.State.SelectedPaths, p)
+					}
 				}
 			case "enter":
 				if len(m.State.SelectedPaths) > 0 {
