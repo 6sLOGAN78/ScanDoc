@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from scandoc.cli.formatter import TerminalFormatter
 from scandoc.server.config import ServerConfig
 from scandoc.server.jobs import AsyncJobManager
-from scandoc.server.routes import convert_router, health_router, jobs_router, telemetry_router
+from scandoc.server.routes import convert_router, health_router, jobs_router, studio_router, telemetry_router
 from scandoc.server.taxonomy import ServerErrorCode
 
 
@@ -64,6 +64,7 @@ def create_app(config: Optional[ServerConfig] = None) -> FastAPI:
     app.include_router(convert_router)
     app.include_router(jobs_router)
     app.include_router(telemetry_router)
+    app.include_router(studio_router)
 
     # Global Exception Handler protecting against Python stack trace leakage & secret exposure
     @app.exception_handler(Exception)

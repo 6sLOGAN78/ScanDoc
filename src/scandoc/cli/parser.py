@@ -128,4 +128,13 @@ def create_parser() -> argparse.ArgumentParser:
     models_c.add_argument("--all", action="store_true", help="Clear all local model caches")
     models_c.add_argument("--json", action="store_true", help="Output machine-readable JSON format")
 
+    # 6. STUDIO Subcommand
+    studio_parser = subparsers.add_parser(
+        "studio",
+        help="Launch embedded Visual Layout Inspector Studio Web UI server",
+    )
+    studio_parser.add_argument("--host", default="127.0.0.1", help="Studio server host IP (default: 127.0.0.1)")
+    studio_parser.add_argument("-p", "--port", type=int, default=8000, help="Studio server port (default: 8000)")
+    studio_parser.add_argument("--no-browser", dest="open_browser", action="store_false", help="Do not automatically open web browser")
+
     return parser

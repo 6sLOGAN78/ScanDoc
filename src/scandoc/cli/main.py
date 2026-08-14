@@ -11,6 +11,7 @@ from scandoc.cli.commands.convert import run_convert
 from scandoc.cli.commands.inspect import run_inspect
 from scandoc.cli.commands.models import run_models
 from scandoc.cli.commands.serve import run_serve
+from scandoc.cli.commands.studio import run_studio
 from scandoc.cli.exceptions import CliError
 from scandoc.cli.formatter import TerminalFormatter
 from scandoc.cli.parser import create_parser
@@ -73,6 +74,8 @@ def main(args: Optional[List[str]] = None) -> int:
             return run_benchmark(parsed_args)
         elif parsed_args.command == "models":
             return run_models(parsed_args)
+        elif parsed_args.command == "studio":
+            return run_studio(parsed_args)
         else:
             parser.print_help()
             return ExitCode.INVALID_ARGUMENTS

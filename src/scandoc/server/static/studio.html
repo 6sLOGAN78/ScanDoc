@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>scanDOC Studio — Visual Layout Inspector & Live Conversion</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --accent-orange: #f59e0b;
+      --border-color: #475569;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--accent-blue);
+    }
+
+    .brand span { color: var(--text-muted); font-size: 0.85rem; font-weight: 400; }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .btn {
+      background-color: var(--accent-blue);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover { background-color: #2563eb; }
+
+    .main-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background-color: var(--bg-secondary);
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-content {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    /* Bounding Box Visual Overlay Canvas */
+    .canvas-wrapper {
+      position: relative;
+      background: #ffffff;
+      color: #000;
+      min-height: 700px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      padding: 2rem;
+    }
+
+    .bbox-overlay {
+      position: absolute;
+      border: 2px solid var(--accent-blue);
+      border-radius: 3px;
+      background: rgba(59, 130, 246, 0.1);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .bbox-overlay:hover {
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+      z-index: 10;
+    }
+
+    .bbox-label {
+      position: absolute;
+      top: -1.2rem;
+      left: 0;
+      background: var(--bg-secondary);
+      color: #fff;
+      font-size: 0.7rem;
+      padding: 2px 4px;
+      border-radius: 2px;
+      white-space: nowrap;
+    }
+
+    .markdown-preview {
+      line-height: 1.7;
+      font-size: 1rem;
+    }
+
+    .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 {
+      margin-top: 1.2rem;
+      margin-bottom: 0.6rem;
+      color: var(--accent-blue);
+    }
+
+    .markdown-preview p { margin-bottom: 1rem; }
+
+    .legend {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.8rem;
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 0.3rem; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      📄 scanDOC Studio <span>v1.0 Layout Inspector</span>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="dot" style="background:#ef4444"></span> Heading</div>
+      <div class="legend-item"><span class="dot" style="background:#3b82f6"></span> Paragraph</div>
+      <div class="legend-item"><span class="dot" style="background:#10b981"></span> Table</div>
+      <div class="legend-item"><span class="dot" style="background:#8b5cf6"></span> Formula</div>
+      <div class="legend-item"><span class="dot" style="background:#f59e0b"></span> Figure</div>
+    </div>
+    <div class="controls">
+      <input type="file" id="fileInput" style="display:none" onchange="handleFileUpload(event)">
+      <button class="btn" onclick="document.getElementById('fileInput').click()">Upload Document</button>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- Left Panel: Visual Layout Canvas -->
+    <div class="panel">
+      <div class="panel-header">
+        Visual Layout Bounding Boxes (RT-DETR + SLANet Overlay)
+      </div>
+      <div class="panel-content" id="canvasContent">
+        <div class="canvas-wrapper" id="canvasWrapper">
+          <p style="color:#64748b; text-align:center; margin-top:200px;">
+            Upload a document (PDF, PNG, JPG) to inspect RT-DETR layout bounding boxes, SLANet table cells, and LaTeX formulas.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Side-by-side Markdown Live Preview -->
+    <div class="panel">
+      <div class="panel-header">
+        Live Markdown & Structural Export Preview
+      </div>
+      <div class="panel-content markdown-preview" id="markdownPreview">
+        <p style="color:var(--text-muted);">Extracted text and rendered Markdown document structure will appear here in real time.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      document.getElementById("canvasWrapper").innerHTML = `<p style="color:#3b82f6; text-align:center; margin-top:200px;">Analyzing document layout with RT-DETR and SLANet...</p>`;
+
+      try {
+        const resp = await fetch("/api/studio/inspect", {
+          method: "POST",
+          body: formData
+        });
+        const data = await resp.json();
+        renderStudioResults(data);
+      } catch (err) {
+        alert("Conversion failed: " + err);
+      }
+    }
+
+    function renderStudioResults(data) {
+      const wrapper = document.getElementById("canvasWrapper");
+      wrapper.innerHTML = "";
+
+      // Render Bounding Box Overlays
+      if (data.pages && data.pages.length > 0) {
+        const p = data.pages[0];
+        p.blocks.forEach(b => {
+          if (!b.bbox) return;
+          const div = document.createElement("div");
+          div.className = "bbox-overlay";
+          div.style.left = (b.bbox[0] * 100) + "%";
+          div.style.top = (b.bbox[1] * 100) + "%";
+          div.style.width = ((b.bbox[2] - b.bbox[0]) * 100) + "%";
+          div.style.height = ((b.bbox[3] - b.bbox[1]) * 100) + "%";
+          div.style.borderColor = b.color || "#3b82f6";
+          div.style.background = (b.color || "#3b82f6") + "20";
+
+          div.innerHTML = `<span class="bbox-label" style="background:${b.color || '#3b82f6'}">${b.type} (${Math.round((b.confidence || 0.95) * 100)}%)</span>`;
+          wrapper.appendChild(div);
+        });
+      }
+
+      // Render Markdown Text
+      document.getElementById("markdownPreview").innerHTML = data.html || "<pre>" + (data.markdown || "") + "</pre>";
+    }
+  </script>
+</body>
+</html>
