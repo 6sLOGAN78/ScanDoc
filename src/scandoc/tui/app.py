@@ -219,19 +219,19 @@ class ScanDocTuiApp:
                 elif key in ("s", "j", "down"):
                     self.selected_idx = (self.selected_idx + 1) % max_items
                 elif key == "space" and items:
-                    target_path = items[self.selected_idx]["path"]
+                    target_path = items[self.selected_idx][0]
                     if target_path in self.state.selected_paths:
                         self.state.selected_paths.remove(target_path)
                     else:
                         self.state.selected_paths.append(target_path)
                 elif key == "enter" and items:
-                    target_item = items[self.selected_idx]
-                    if target_item["is_dir"]:
-                        self.state.current_dir = target_item["path"]
+                    target_path, is_dir, _, _ = items[self.selected_idx]
+                    if is_dir:
+                        self.state.current_dir = target_path
                         self.selected_idx = 0
                     else:
-                        self.state.selected_paths = [target_item["path"]]
-                        self.state.active_document_path = target_item["path"]
+                        self.state.selected_paths = [target_path]
+                        self.state.active_document_path = target_path
                         self.state.navigate_to(ScreenType.PROCESSING)
                 elif key in ("backspace", "b"):
                     self.state.current_dir = self.state.current_dir.parent
