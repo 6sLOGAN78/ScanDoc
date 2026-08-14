@@ -62,8 +62,11 @@ func Render(st *state.AppState, items []controller.FileItem, selectedIdx int, cu
 
 			sizeStr := ""
 			if !item.IsDir {
-				sizeStr = fmt.Sprintf("%d KB", item.SizeBytes/1024)
-				if item.SizeBytes > 1024*1024 {
+				if item.SizeBytes < 1024 {
+					sizeStr = fmt.Sprintf("%d B", item.SizeBytes)
+				} else if item.SizeBytes < 1024*1024 {
+					sizeStr = fmt.Sprintf("%d KB", item.SizeBytes/1024)
+				} else {
 					sizeStr = fmt.Sprintf("%d MB", item.SizeBytes/(1024*1024))
 				}
 			}
