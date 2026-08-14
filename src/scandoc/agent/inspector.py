@@ -70,22 +70,23 @@ class AgentDocumentInspector:
 
         if fmt_name == "pdf" and isinstance(source, (str, Path)):
             pdf_ins = PdfInspector.inspect(source)
-            cls_type = pdf_ins.document_classification
+            cls_type = getattr(pdf_ins, "category", DocumentCategory.DIGITALLY_GENERATED)
 
             page_chars: List[PageCharacteristics] = []
             for p_info in pdf_ins.pages:
-                text_density = p_info.native_text_density
-                scan_prob = 1.0 if p_info.content_type.value in ("scanned", "image_only") else (0.0 if text_density > 0.8 else 0.5)
-                img_density = 0.8 if len(p_info.embedded_images) > 0 else 0.0
+                text_density = getattr(p_info, "text_density_ratio", 0.0)
+                images_list = getattr(p_info, "images", [])
+                scan_prob = 1.0 if p_info.content_type.value in ("scanned", "image_only", "SCANNED_IMAGE_ONLY") else (0.0 if text_density > 0.8 else 0.5)
+                img_density = 0.8 if len(images_list) > 0 else 0.0
 
                 page_chars.append(
                     PageCharacteristics(
-                        page_index=p_info.page_number - 1,
+                        page_index=getattr(p_info, "page_index", 0),
                         native_text_ratio=text_density,
                         scan_probability=scan_prob,
                         image_density=img_density,
-                        has_tables=(p_info.table_indicator_score > 0.4),
-                        has_figures=(len(p_info.embedded_images) > 0),
+                        has_tables=False,
+                        has_figures=(len(images_list) > 0),
                     )
                 )
 
