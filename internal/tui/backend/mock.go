@@ -74,9 +74,15 @@ func NewMockModelService() *MockModelService {
 }
 
 func (s *MockModelService) isInstalled(modelID string) bool {
-	path := filepath.Join(s.modelDir, modelID+".bin")
-	_, err := os.Stat(path)
-	return err == nil
+	path1 := filepath.Join(s.modelDir, modelID)
+	path2 := filepath.Join(s.modelDir, modelID+".bin")
+	path3 := filepath.Join(s.modelDir, modelID+".pt")
+	
+	if _, err := os.Stat(path1); err == nil { return true }
+	if _, err := os.Stat(path2); err == nil { return true }
+	if _, err := os.Stat(path3); err == nil { return true }
+	
+	return false
 }
 
 func (s *MockModelService) ListModels(ctx context.Context) ([]ModelInfo, error) {
@@ -102,17 +108,16 @@ func (s *MockModelService) DownloadModel(ctx context.Context, modelID string) er
 }
 
 func (s *MockModelService) ClearCache(ctx context.Context, modelID string) error {
-	path := filepath.Join(s.modelDir, modelID+".bin")
-	err := os.Remove(path)
-	if err == nil {
-		logger.LogAction("MODEL_UNINSTALL", "Successfully uninstalled model: "+modelID)
-	} else if os.IsNotExist(err) {
-		logger.LogAction("MODEL_UNINSTALL", "Model already uninstalled: "+modelID)
-		return nil
-	} else {
-		logger.LogAction("MODEL_UNINSTALL_ERROR", "Failed to uninstall model: "+modelID+" error: "+err.Error())
-	}
-	return err
+	path1 := filepath.Join(s.modelDir, modelID)
+	path2 := filepath.Join(s.modelDir, modelID+".bin")
+	path3 := filepath.Join(s.modelDir, modelID+".pt")
+	
+	_ = os.Remove(path1)
+	_ = os.Remove(path2)
+	_ = os.Remove(path3)
+
+	logger.LogAction("MODEL_UNINSTALL", "Successfully uninstalled model: "+modelID)
+	return nil
 }
 
 type MockBenchmarkService struct{}

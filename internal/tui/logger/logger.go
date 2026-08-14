@@ -13,7 +13,7 @@ var (
 )
 
 func Init() error {
-	logDir := "./local/scandoc/logs"
+	logDir := "./local/scandoc/output/logs"
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return err
 	}
