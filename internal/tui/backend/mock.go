@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -28,18 +29,19 @@ func (s *MockDocumentService) Process(ctx context.Context, path string, config s
 	outDir := filepath.Join("./local/scandoc/output", filepath.Base(path))
 	os.MkdirAll(outDir, 0755)
 
-	// Simulate copying the original file
-	info, err := os.Stat(path)
-	if err == nil && !info.IsDir() {
-		inputData, _ := os.ReadFile(path)
-		os.WriteFile(filepath.Join(outDir, filepath.Base(path)), inputData, 0644)
-	} else if err == nil && info.IsDir() {
-		// Just a dummy file to represent the scanned folder original
-		os.WriteFile(filepath.Join(outDir, "scanned_folder_index.txt"), []byte("folder scanned: "+path), 0644)
-	}
+	// Create an images folder inside the output
+	imagesDir := filepath.Join(outDir, "images")
+	os.MkdirAll(imagesDir, 0755)
+	
+	// Dummy image
+	os.WriteFile(filepath.Join(imagesDir, "page1_extracted_img1.png"), []byte("dummy image data"), 0644)
+
+	// Copy the original file or folder using shell command for simplicity
+	cmd := exec.Command("cp", "-r", path, outDir+"/")
+	cmd.Run()
 
 	// Output chunks
-	chunksData := `{"chunks": [{"id": 1, "text": "Extracted text chunk 1"}, {"id": 2, "text": "Extracted text chunk 2"}]}`
+	chunksData := `{"chunks": [{"id": 1, "text": "Extracted text chunk 1", "has_image": true}, {"id": 2, "text": "Extracted text chunk 2"}]}`
 	os.WriteFile(filepath.Join(outDir, "chunks.json"), []byte(chunksData), 0644)
 
 	logger.LogAction("DOCUMENT_PROCESS", "Processed and exported to: "+outDir)
