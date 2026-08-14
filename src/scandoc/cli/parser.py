@@ -137,4 +137,10 @@ def create_parser() -> argparse.ArgumentParser:
     studio_parser.add_argument("-p", "--port", type=int, default=8000, help="Studio server port (default: 8000)")
     studio_parser.add_argument("--no-browser", dest="open_browser", action="store_false", help="Do not automatically open web browser")
 
+    # 7. TUI Subcommand
+    tui_parser = subparsers.add_parser(
+        "tui",
+        help="Launch interactive Claude-style scanDOC Terminal UI (TUI)",
+    )
+
     return parser

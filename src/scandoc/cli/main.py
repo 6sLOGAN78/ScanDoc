@@ -12,6 +12,7 @@ from scandoc.cli.commands.inspect import run_inspect
 from scandoc.cli.commands.models import run_models
 from scandoc.cli.commands.serve import run_serve
 from scandoc.cli.commands.studio import run_studio
+from scandoc.cli.commands.tui import run_tui
 from scandoc.cli.exceptions import CliError
 from scandoc.cli.formatter import TerminalFormatter
 from scandoc.cli.parser import create_parser
@@ -31,19 +32,12 @@ def _signal_handler(signum: int, frame: Any) -> None:
 def main(args: Optional[List[str]] = None) -> int:
     """
     Main CLI entry point function.
-    
-    Args:
-        args: List of command-line arguments (defaults to sys.argv[1:])
-        
-    Returns:
-        int: Exit code (0 for success, non-zero for error)
     """
-    # Register signal handlers for clean SIGINT / SIGTERM handling
     try:
         signal.signal(signal.SIGINT, _signal_handler)
         signal.signal(signal.SIGTERM, _signal_handler)
     except (ValueError, AttributeError):
-        pass  # Signal registration might fail if called from a non-main thread
+        pass
 
     parser = create_parser()
 
@@ -51,6 +45,8 @@ def main(args: Optional[List[str]] = None) -> int:
         args = sys.argv[1:]
 
     if not args:
+        if sys.stdout.isatty():
+            return run_tui(None)
         parser.print_help()
         return ExitCode.SUCCESS
 
@@ -60,6 +56,8 @@ def main(args: Optional[List[str]] = None) -> int:
         return e.code if isinstance(e.code, int) else ExitCode.INVALID_ARGUMENTS
 
     if not parsed_args.command:
+        if sys.stdout.isatty():
+            return run_tui(None)
         parser.print_help()
         return ExitCode.SUCCESS
 
@@ -76,6 +74,8 @@ def main(args: Optional[List[str]] = None) -> int:
             return run_models(parsed_args)
         elif parsed_args.command == "studio":
             return run_studio(parsed_args)
+        elif parsed_args.command == "tui":
+            return run_tui(parsed_args)
         else:
             parser.print_help()
             return ExitCode.INVALID_ARGUMENTS
