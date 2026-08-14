@@ -13,6 +13,11 @@ class VlmProviderUnavailableError(VlmError):
     pass
 
 
+class VlmInitializationError(VlmError):
+    """Raised when VLM model initialization fails."""
+    pass
+
+
 class PrivacyViolationError(VlmError):
     """Raised when a remote VLM provider is invoked without explicit user authorization."""
     pass

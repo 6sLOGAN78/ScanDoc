@@ -79,6 +79,15 @@ class ModelRegistry:
                 supported_devices=["cpu", "cuda"],
                 state=ModelState.READY,
             ),
+            ModelSpec(
+                model_id="smolvlm_local",
+                provider="local_vlm_engine",
+                model_name="SmolVLM Multimodal Vision-Language Model",
+                architecture="SmolVLM",
+                task=TaskType.VLM,
+                supported_devices=["cpu", "cuda"],
+                state=ModelState.READY,
+            ),
         ]
         for m in defaults:
             self.register(m)
