@@ -341,9 +341,11 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			case "b", "backspace":
 				parent := filepath.Dir(m.State.WorkspaceDir)
-				m.State.WorkspaceDir = parent
-				m.refreshWorkspaceItems()
-				m.SelectedIndex = 0
+				if strings.HasPrefix(filepath.Clean(parent), filepath.Clean(m.State.WorkspaceRoot)) {
+					m.State.WorkspaceDir = parent
+					m.refreshWorkspaceItems()
+					m.SelectedIndex = 0
+				}
 			}
 
 		case state.ScreenPipelineConfig:

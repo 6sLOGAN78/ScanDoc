@@ -53,6 +53,7 @@ type AppState struct {
 	// Navigation & File Selection
 	CurrentDir      string
 	WorkspaceDir    string
+	WorkspaceRoot   string
 	SelectedPaths   []string
 	WindowWidth     int
 	WindowHeight    int
@@ -101,6 +102,7 @@ func NewAppState() *AppState {
 		CurrentScreen:   ScreenHome,
 		CurrentDir:      cwd,
 		WorkspaceDir:    filepath.Join(cwd, "local", "scandoc", "output"),
+		WorkspaceRoot:   filepath.Join(cwd, "local", "scandoc", "output"),
 		SelectedPaths:   make([]string, 0),
 		ProcessingLogs:  make([]string, 0),
 		ProcessingErrors: make([]string, 0),
