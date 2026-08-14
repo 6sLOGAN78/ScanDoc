@@ -120,7 +120,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.SelectedIndex < len(items)-1 {
 					m.SelectedIndex++
 				}
-			case "enter", "space":
+			case "enter", " ":
 				target := items[m.SelectedIndex].TargetScreen
 				if target == "" {
 					return m, tea.Quit
@@ -172,7 +172,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.SelectedIndex < len(m.FileItems)-1 {
 					m.SelectedIndex++
 				}
-			case "space":
+			case " ":
 				if len(m.FileItems) > 0 {
 					p := m.FileItems[m.SelectedIndex].Path
 					found := -1
@@ -221,7 +221,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.SelectedIndex < 5 {
 					m.SelectedIndex++
 				}
-			case "space", "enter":
+			case " ", "enter":
 				switch m.SelectedIndex {
 				case 0:
 					m.State.PipelineConfig.EnableOCR = !m.State.PipelineConfig.EnableOCR
@@ -280,7 +280,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.SelectedIndex < 3 {
 					m.SelectedIndex++
 				}
-			case "space", "enter":
+			case " ", "enter":
 				switch m.SelectedIndex {
 				case 0:
 					m.State.ToggleOfflineMode()
@@ -325,7 +325,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.SelectedIndex < len(supported)-1 {
 					m.SelectedIndex++
 				}
-			case "space", "enter":
+			case " ", "enter":
 				if len(supported) > 0 {
 					m.State.ExportFormat = supported[m.SelectedIndex].ID
 					if m.State.ActiveDocumentPath != "" {
