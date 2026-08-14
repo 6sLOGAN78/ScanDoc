@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"scandoc/internal/tui/logger"
@@ -24,7 +25,8 @@ func (s *MockDocumentService) Inspect(ctx context.Context, path string) (*Docume
 }
 
 func (s *MockDocumentService) Process(ctx context.Context, path string, config state.PipelineConfig) error {
-	time.Sleep(100 * time.Millisecond)
+	startTime := time.Now()
+	time.Sleep(100 * time.Millisecond) // Simulate processing time
 
 	outDir := filepath.Join("./local/scandoc/output", filepath.Base(path))
 	os.MkdirAll(outDir, 0755)
@@ -40,9 +42,51 @@ func (s *MockDocumentService) Process(ctx context.Context, path string, config s
 	cmd := exec.Command("cp", "-r", path, outDir+"/")
 	cmd.Run()
 
+	// Extract some actual text to make chunks look real if it's a file
+	var extractedText string
+	info, err := os.Stat(path)
+	if err == nil && !info.IsDir() {
+		data, err := os.ReadFile(path)
+		if err == nil {
+			extractedText = string(data)
+			if len(extractedText) > 200 {
+				extractedText = extractedText[:200] + "..."
+			}
+			extractedText = strings.ReplaceAll(extractedText, "\n", " ")
+			extractedText = strings.ReplaceAll(extractedText, "\"", "\\\"")
+		}
+	}
+	if extractedText == "" {
+		extractedText = "Sample extracted document text segment."
+	}
+
 	// Output chunks
-	chunksData := `{"chunks": [{"id": 1, "text": "Extracted text chunk 1", "has_image": true}, {"id": 2, "text": "Extracted text chunk 2"}]}`
+	chunksData := fmt.Sprintf(`{"chunks": [{"id": 1, "text": "%s", "has_image": true}, {"id": 2, "text": "Additional context chunk"}]}`, extractedText)
 	os.WriteFile(filepath.Join(outDir, "chunks.json"), []byte(chunksData), 0644)
+
+	// Generate process.log
+	logContent := fmt.Sprintf("=== scanDOC Processing Log ===\n")
+	logContent += fmt.Sprintf("Date: %s\n", time.Now().Format(time.RFC1123))
+	logContent += fmt.Sprintf("Target: %s\n\n", path)
+	
+	logContent += "--- Models Used ---\n"
+	if config.EnableOCR { logContent += "- OCR Model: rapidocr_onnx\n" }
+	if config.EnableLayout { logContent += "- Layout Analyzer: rtdetr_doclaynet\n" }
+	if config.EnableTable { logContent += "- Table Recognizer: slanet_table\n" }
+	if config.EnableFormula { logContent += "- Formula Extractor: pix2text_formula\n" }
+	if config.EnableVLM { logContent += "- VLM: smolvlm_local\n" }
+	logContent += fmt.Sprintf("Routing Mode: %s\n\n", config.RoutingMode)
+
+	logContent += "--- Execution Stats ---\n"
+	logContent += "Total Chunks Found: 2\n"
+	logContent += "Total Chunks Stored: 2\n"
+	logContent += "Images Extracted: 1\n"
+	elapsed := time.Since(startTime)
+	logContent += fmt.Sprintf("Total Processing Time: %v\n", elapsed)
+	if config.EnableOCR { logContent += "  > OCR Processing Time: 45ms\n" }
+	if config.EnableLayout { logContent += "  > Layout Analysis Time: 32ms\n" }
+	
+	os.WriteFile(filepath.Join(outDir, "process.log"), []byte(logContent), 0644)
 
 	logger.LogAction("DOCUMENT_PROCESS", "Processed and exported to: "+outDir)
 	return nil
