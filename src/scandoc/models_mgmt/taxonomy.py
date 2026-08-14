@@ -24,6 +24,7 @@ class ModelSource(str, Enum):
     URL = "url"
     BUNDLED = "bundled"
     USER_PROVIDED = "user_provided"
+    REMOTE_API = "remote_api"
 
 
 class ModelFormat(str, Enum):

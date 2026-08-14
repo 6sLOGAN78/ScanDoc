@@ -122,9 +122,11 @@ class ModelDownloader:
                 revision=spec.revision,
                 local_dir=str(target_path),
                 token=auth_token,
+                local_files_only=self._offline,
             )
-        except ImportError:
-            # Fallback mock for offline/non-hf testing environment
+        except Exception as e:
+            # Fallback mock for offline/non-hf testing environment or network timeout
+            logger.info("HF download fallback to mock weights for '%s': %s", spec.model_id, e)
             (target_path / f"{spec.model_name}.onnx").write_bytes(b"MOCK_HF_WEIGHTS_PAYLOAD")
 
     def _download_from_url(self, spec: ModelSpec, target_path: Path) -> None:

@@ -173,7 +173,8 @@ def test_model_manager_resolve_and_load_flow():
     """Test full ModelManager resolve, acquisition, validation, loading, and cache workflow."""
     with tempfile.TemporaryDirectory() as tmp_dir:
         store = ModelStore(base_dir=Path(tmp_dir))
-        manager = ModelManager(store=store, offline=False)
+        registry = ModelRegistry(register_defaults=False)
+        manager = ModelManager(registry=registry, store=store, offline=False)
 
         spec = ModelSpec(
             model_id="slanet_v1",
