@@ -214,6 +214,13 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		if (k == "left" || k == "h") && m.FocusedPanel == FocusContent {
+			if m.State.CurrentScreen != state.ScreenCommandPalette {
+				m.FocusedPanel = FocusSidebar
+				return m, nil
+			}
+		}
+
 		// Content Navigation
 		switch m.State.CurrentScreen {
 		case state.ScreenHome:
@@ -278,7 +285,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.State.NavigateTo(state.ScreenProcessing)
 					}
 				}
-			case "b", "backspace", "h", "left":
+			case "b", "backspace":
 				parent := filepath.Dir(m.State.CurrentDir)
 				m.State.CurrentDir = parent
 				m.refreshFileItems()
