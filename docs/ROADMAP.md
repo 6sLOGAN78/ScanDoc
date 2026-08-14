@@ -80,9 +80,13 @@ gantt
 5. `scandoc.agent.planner` (Agentic Control Plane & Fallbacks)
 6. `benchmarks` (Comparative evaluation against Docling)
 
+## 4. Native Go TUI
+The native Terminal UI (TUI) has been completely rewritten in Go, replacing the legacy Python Textual implementation. The Go TUI (`scandoc-tui`) delivers lower latency, lower memory footprint, and better concurrency handling for background jobs (like model downloading and processing). The Python CLI (`scandoc tui`) automatically detects and launches the compiled Go binary.
+
 ---
 
-## 4. Next Step Recommendation
+## 5. Next Step Recommendation
 
 **Immediate Next Action**: Proceed to **Phase 1: Core Document IR & Base Provider Interfaces**.
 In Phase 1, we will implement the Python types (`DocumentIR`, `TextItem`, `TableItem`, `Prov`, etc.), abstract base class provider contracts, and export serializers without initializing any machine learning heavy runtimes.
+

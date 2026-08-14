@@ -138,6 +138,7 @@ The agentic planner acts as the **Control Plane** above the deterministic **Data
 | **Future Hardware Backends** | Extensible `DeviceContext` registration model allowing custom execution providers (e.g. NPU, DirectML, WebNN). | **Verified** |
 | **VLM Fallback** | `scandoc.agent.Validator` detects low OCR confidence or broken layout grids and cascades execution to `BaseVlmProvider`. | **Verified** |
 | **Agentic Routing** | `scandoc.agent.Inspector` + `Planner` inspects native text ratio and page properties to select Light, Standard, or VLM pipelines. | **Verified** |
+| **Native Terminal UI** | A high-performance, native Go Bubble Tea TUI providing a comprehensive Claude-like interface decoupled from the core Python ML processes. | **Verified** |
 
 ---
 

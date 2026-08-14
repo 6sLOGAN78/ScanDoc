@@ -605,7 +605,7 @@ scandoc models clear --all
 
 ## TUI — Interactive Terminal Interface
 
-scanDOC includes a polished, full-screen **Claude Code-style Terminal UI (TUI)** designed for developers and data engineers who prefer interactive keyboard-driven workflows.
+scanDOC includes a high-performance, native Go **Terminal UI (TUI)** built with the Bubble Tea framework. It is designed for developers and data engineers who prefer interactive keyboard-driven workflows. The Go TUI runs entirely detached from the Python ML interpreter, providing zero-latency UI updates while handling heavy ML jobs asynchronously.
 
 ```
 ╭──────────────── scanDOC Document Intelligence Engine v0.1.0 ─────────────────╮
@@ -626,14 +626,14 @@ scanDOC includes a polished, full-screen **Claude Code-style Terminal UI (TUI)**
 
 ### TUI Features & Keybindings
 
-- **Full-Screen Rich Canvas**: Uses terminal alternate screen buffer (`screen=True`) to eliminate line flickering or scrollback clutter.
+- **High-Performance Native UI**: Written in pure Go with `charmbracelet/bubbletea`, rendering instantly without the memory overhead of a Python runtime.
 - **Keyboard Navigation**:
-  - `1` .. `9` or `w`/`s` / `up`/`down` ➔ Move menu selection.
+  - `1` .. `9` or `j`/`k` / `up`/`down` ➔ Move menu selection.
   - `Enter` or `Space` ➔ Select option / toggle setting.
   - `Ctrl` + `P` or `>` ➔ Open **Command Palette** quick action modal.
   - `Esc` ➔ Return to Home Dashboard.
-  - `q` ➔ Quit TUI.
-- **Decoupled Architecture**: Driven by `TuiController`, `JobManager`, and `EventBus` — rendering widgets contains zero OCR or PDF parsing logic.
+  - `q` or `Ctrl+C` ➔ Quit TUI.
+- **Decoupled Architecture**: The UI logic is completely isolated from the backend python engine. It relies on the Elm Architecture (Model-View-Update), making the interface highly responsive.
 
 ---
 
