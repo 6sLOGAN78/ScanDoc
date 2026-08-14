@@ -78,6 +78,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
+		m.State.WindowWidth = msg.Width
+		m.State.WindowHeight = msg.Height
 		return m, nil
 
 	case events.AppEventMsg:

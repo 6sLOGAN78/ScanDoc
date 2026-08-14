@@ -52,6 +52,8 @@ type AppState struct {
 	// Navigation & File Selection
 	CurrentDir      string
 	SelectedPaths   []string
+	WindowWidth     int
+	WindowHeight    int
 	SearchQuery     string
 	ExtensionFilter string
 

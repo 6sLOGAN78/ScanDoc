@@ -22,7 +22,32 @@ func Render(st *state.AppState, items []controller.FileItem, selectedIdx int) st
 	if len(items) == 0 {
 		b.WriteString(styles.NormalItemStyle.Render("Directory is empty.") + "\n")
 	} else {
-		for i, item := range items {
+		// Calculate visible window
+		visibleCount := st.WindowHeight - 12
+		if visibleCount < 5 {
+			visibleCount = 10
+		}
+		
+		startIdx := 0
+		if selectedIdx >= visibleCount/2 {
+			startIdx = selectedIdx - visibleCount/2
+		}
+		endIdx := startIdx + visibleCount
+		if endIdx > len(items) {
+			endIdx = len(items)
+			startIdx = endIdx - visibleCount
+			if startIdx < 0 {
+				startIdx = 0
+			}
+		}
+
+		if startIdx > 0 {
+			b.WriteString(styles.NormalItemStyle.Render("  ↑ ..."))
+			b.WriteString("\n")
+		}
+
+		for i := startIdx; i < endIdx; i++ {
+			item := items[i]
 			icon := "📄"
 			if item.IsDir {
 				icon = "📁"
@@ -47,6 +72,11 @@ func Render(st *state.AppState, items []controller.FileItem, selectedIdx int) st
 			} else {
 				b.WriteString(styles.NormalItemStyle.Render("  "+line) + "\n")
 			}
+		}
+
+		if endIdx < len(items) {
+			b.WriteString(styles.NormalItemStyle.Render("  ↓ ..."))
+			b.WriteString("\n")
 		}
 	}
 
