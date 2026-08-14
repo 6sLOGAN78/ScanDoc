@@ -91,4 +91,38 @@ def create_parser() -> argparse.ArgumentParser:
     bench_parser.add_argument("-q", "--quiet", action="store_true", help="Suppress terminal banners")
     bench_parser.add_argument("--json", action="store_true", help="Output benchmark metrics in JSON format")
 
+    # 5. MODELS Subcommand
+    models_parser = subparsers.add_parser(
+        "models",
+        help="Manage local model lifecycle (list, status, download, verify, clear)",
+    )
+    models_subparsers = models_parser.add_subparsers(dest="models_command", help="Model management action")
+
+    # models list
+    models_list = models_subparsers.add_parser("list", help="List registered and installed models")
+    models_list.add_argument("--json", action="store_true", help="Output machine-readable JSON format")
+
+    # models status
+    models_status = models_subparsers.add_parser("status", help="Display model lifecycle status")
+    models_status.add_argument("model_id", nargs="?", help="Optional specific model ID to inspect")
+    models_status.add_argument("--json", action="store_true", help="Output machine-readable JSON format")
+
+    # models download
+    models_dl = models_subparsers.add_parser("download", help="Download model weights artifacts")
+    models_dl.add_argument("model_id", nargs="?", help="Model ID to download")
+    models_dl.add_argument("--all", action="store_true", help="Download all registered models")
+    models_dl.add_argument("--json", action="store_true", help="Output machine-readable JSON format")
+
+    # models verify
+    models_v = models_subparsers.add_parser("verify", help="Verify SHA-256 checksums of installed model files")
+    models_v.add_argument("model_id", nargs="?", help="Model ID to verify")
+    models_v.add_argument("--all", action="store_true", help="Verify all installed models")
+    models_v.add_argument("--json", action="store_true", help="Output machine-readable JSON format")
+
+    # models clear
+    models_c = models_subparsers.add_parser("clear", help="Clear local cached model weights")
+    models_c.add_argument("model_id", nargs="?", help="Model ID to clear")
+    models_c.add_argument("--all", action="store_true", help="Clear all local model caches")
+    models_c.add_argument("--json", action="store_true", help="Output machine-readable JSON format")
+
     return parser

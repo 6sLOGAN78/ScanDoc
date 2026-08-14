@@ -27,6 +27,8 @@ class ModelSpec(BaseModel):
     task: TaskType = Field(TaskType.OTHER, description="Task category (OCR, LAYOUT, TABLE, etc.)")
     format: ModelFormat = Field(ModelFormat.ONNX, description="Weights format (ONNX, PyTorch, SafeTensors)")
     source: ModelSource = Field(ModelSource.LOCAL_PATH, description="Source origin (LOCAL_PATH, HUGGINGFACE, URL)")
+    url: Optional[str] = Field(None, description="Download URL or HF repo string")
+    filename: Optional[str] = Field(None, description="Target model weights filename (e.g. 'model.onnx')")
     size_bytes: int = Field(0, ge=0, description="Artifact size in bytes")
     checksum_sha256: Optional[str] = Field(None, description="SHA-256 verification hash")
     license: Optional[str] = Field(None, description="Model open-source license string")

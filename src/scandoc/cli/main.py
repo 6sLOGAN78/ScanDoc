@@ -9,6 +9,7 @@ from typing import Any, List, Optional
 from scandoc.cli.commands.benchmark import run_benchmark
 from scandoc.cli.commands.convert import run_convert
 from scandoc.cli.commands.inspect import run_inspect
+from scandoc.cli.commands.models import run_models
 from scandoc.cli.commands.serve import run_serve
 from scandoc.cli.exceptions import CliError
 from scandoc.cli.formatter import TerminalFormatter
@@ -70,6 +71,8 @@ def main(args: Optional[List[str]] = None) -> int:
             return run_serve(parsed_args)
         elif parsed_args.command == "benchmark":
             return run_benchmark(parsed_args)
+        elif parsed_args.command == "models":
+            return run_models(parsed_args)
         else:
             parser.print_help()
             return ExitCode.INVALID_ARGUMENTS
