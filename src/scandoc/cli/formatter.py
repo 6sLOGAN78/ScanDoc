@@ -72,6 +72,14 @@ class TerminalFormatter:
             sys.stderr.flush()
 
     @staticmethod
+    def print_banner() -> None:
+        """Print scanDOC terminal header banner."""
+        sys.stderr.write("==================================================\n")
+        sys.stderr.write("      scanDOC Document Intelligence Engine v0.1.0 \n")
+        sys.stderr.write("==================================================\n")
+        sys.stderr.flush()
+
+    @staticmethod
     def print_verbose_info(title: str, details: Dict[str, Any], quiet: bool = False) -> None:
         """Print verbose diagnostic telemetry."""
         if quiet:
