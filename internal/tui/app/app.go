@@ -96,7 +96,7 @@ func NewMainModel(ctrl *controller.Controller) *MainModel {
 		Commands:         commands.DefaultCommandRegistry,
 		SelectedIndex:    0,
 		BenchmarkResults: make(map[string]any),
-		FocusedPanel:     FocusContent, // default focus main
+		FocusedPanel:     FocusSidebar, // default focus sidebar for immediate navigation
 		SidebarIndex:     0,
 	}
 	m.refreshFileItems()
@@ -374,6 +374,18 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							break
 						}
 					}
+				}
+			}
+
+		case state.ScreenDocumentInspector:
+			switch k {
+			case "up", "w", "k":
+				if m.SelectedIndex > 0 {
+					m.SelectedIndex--
+				}
+			case "down", "s", "j":
+				if m.SelectedIndex < 3 {
+					m.SelectedIndex++
 				}
 			}
 
