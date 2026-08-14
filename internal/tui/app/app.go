@@ -53,6 +53,7 @@ var SidebarData = []SidebarGroup{
 		Items: []SidebarItem{
 			{"Dashboard", state.ScreenHome},
 			{"Documents", state.ScreenFilePicker},
+			{"Outputs", state.ScreenOutputs},
 			{"Jobs", state.ScreenProcessing},
 			{"Inspector", state.ScreenDocumentInspector},
 			{"Export", state.ScreenExport},
@@ -79,6 +80,7 @@ type MainModel struct {
 	Height           int
 	SelectedIndex    int
 	FileItems        []controller.FileItem
+	WorkspaceItems   []controller.FileItem
 	ModelList        []backend.ModelInfo
 	BenchmarkResults map[string]any
 	IsBenchmarking   bool
@@ -101,6 +103,7 @@ func NewMainModel(ctrl *controller.Controller) *MainModel {
 		SidebarIndex:     0,
 	}
 	m.refreshFileItems()
+	m.refreshWorkspaceItems()
 	m.refreshModelList()
 	return m
 }
@@ -109,6 +112,13 @@ func (m *MainModel) refreshFileItems() {
 	items, err := m.Controller.ListDirectoryFiles(m.State.CurrentDir)
 	if err == nil {
 		m.FileItems = items
+	}
+}
+
+func (m *MainModel) refreshWorkspaceItems() {
+	items, err := m.Controller.ListDirectoryFiles(m.State.WorkspaceDir)
+	if err == nil {
+		m.WorkspaceItems = items
 	}
 }
 
@@ -195,6 +205,9 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.FocusedPanel = FocusContent
 				if target == state.ScreenFilePicker || target == state.ScreenFolderPicker {
 					m.refreshFileItems()
+				}
+				if target == state.ScreenOutputs {
+					m.refreshWorkspaceItems()
 				}
 				if target == state.ScreenModelManager {
 					m.refreshModelList()
@@ -291,6 +304,45 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				parent := filepath.Dir(m.State.CurrentDir)
 				m.State.CurrentDir = parent
 				m.refreshFileItems()
+				m.SelectedIndex = 0
+			}
+
+		case state.ScreenOutputs:
+			switch k {
+			case "up", "w", "k":
+				if m.SelectedIndex > 0 {
+					m.SelectedIndex--
+				}
+			case "down", "s", "j":
+				if m.SelectedIndex < len(m.WorkspaceItems)-1 {
+					m.SelectedIndex++
+				}
+			case "pgup":
+				step := m.State.WindowHeight - 12
+				if step < 5 { step = 10 }
+				m.SelectedIndex -= step
+				if m.SelectedIndex < 0 { m.SelectedIndex = 0 }
+			case "pgdown":
+				step := m.State.WindowHeight - 12
+				if step < 5 { step = 10 }
+				m.SelectedIndex += step
+				if m.SelectedIndex >= len(m.WorkspaceItems) {
+					m.SelectedIndex = len(m.WorkspaceItems) - 1
+					if m.SelectedIndex < 0 { m.SelectedIndex = 0 }
+				}
+			case "enter":
+				if len(m.WorkspaceItems) > 0 {
+					item := m.WorkspaceItems[m.SelectedIndex]
+					if item.IsDir {
+						m.State.WorkspaceDir = item.Path
+						m.refreshWorkspaceItems()
+						m.SelectedIndex = 0
+					}
+				}
+			case "b", "backspace":
+				parent := filepath.Dir(m.State.WorkspaceDir)
+				m.State.WorkspaceDir = parent
+				m.refreshWorkspaceItems()
 				m.SelectedIndex = 0
 			}
 
@@ -525,7 +577,9 @@ func (m *MainModel) View() string {
 	case state.ScreenHome:
 		mainContent = home.Render(m.State, m.SelectedIndex)
 	case state.ScreenFilePicker, state.ScreenFolderPicker:
-		mainContent = filepicker.Render(m.State, m.FileItems, m.SelectedIndex)
+		mainContent = filepicker.Render(m.State, m.FileItems, m.SelectedIndex, m.State.CurrentDir)
+	case state.ScreenOutputs:
+		mainContent = filepicker.Render(m.State, m.WorkspaceItems, m.SelectedIndex, "WORKSPACE: "+m.State.WorkspaceDir)
 	case state.ScreenPipelineConfig:
 		mainContent = pipeline.Render(m.State, m.SelectedIndex)
 	case state.ScreenProcessing:

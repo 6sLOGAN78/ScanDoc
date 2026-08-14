@@ -12,6 +12,7 @@ import (
 const (
 	ScreenHome              = "home"
 	ScreenFilePicker        = "file_picker"
+	ScreenOutputs           = "outputs"
 	ScreenFolderPicker      = "folder_picker"
 	ScreenPipelineConfig    = "pipeline_config"
 	ScreenProcessing        = "processing"
@@ -51,6 +52,7 @@ type AppState struct {
 
 	// Navigation & File Selection
 	CurrentDir      string
+	WorkspaceDir    string
 	SelectedPaths   []string
 	WindowWidth     int
 	WindowHeight    int
@@ -98,6 +100,7 @@ func NewAppState() *AppState {
 	return &AppState{
 		CurrentScreen:   ScreenHome,
 		CurrentDir:      cwd,
+		WorkspaceDir:    filepath.Join(cwd, "local", "scandoc", "output"),
 		SelectedPaths:   make([]string, 0),
 		ProcessingLogs:  make([]string, 0),
 		ProcessingErrors: make([]string, 0),

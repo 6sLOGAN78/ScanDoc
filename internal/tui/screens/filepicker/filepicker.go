@@ -9,11 +9,11 @@ import (
 	"scandoc/internal/tui/styles"
 )
 
-func Render(st *state.AppState, items []controller.FileItem, selectedIdx int) string {
+func Render(st *state.AppState, items []controller.FileItem, selectedIdx int, currentDir string) string {
 	var b strings.Builder
 	
 	// Header
-	b.WriteString(styles.TitleStyle.Render(st.CurrentDir) + "\n\n")
+	b.WriteString(styles.TitleStyle.Render(currentDir) + "\n\n")
 
 	if len(items) == 0 {
 		b.WriteString(styles.MutedStyle.Render("  Directory is empty.") + "\n")

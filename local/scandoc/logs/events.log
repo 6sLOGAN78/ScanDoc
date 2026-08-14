@@ -178,3 +178,6 @@
 2026/08/15 02:54:42 [KEYPRESS] Key: 'up' | Screen: processing
 2026/08/15 02:54:42 [KEYPRESS] Key: 'up' | Screen: processing
 2026/08/15 02:54:42 [KEYPRESS] Key: 'up' | Screen: processing
+2026/08/15 02:55:23 [KEYPRESS] Key: 'esc' | Screen: processing
+2026/08/15 02:55:25 [KEYPRESS] Key: 'q' | Screen: processing
+2026/08/15 02:55:25 [ACTION] APP_EXIT - scanDOC TUI exited cleanly
