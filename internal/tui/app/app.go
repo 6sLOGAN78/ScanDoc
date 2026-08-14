@@ -172,6 +172,23 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.SelectedIndex < len(m.FileItems)-1 {
 					m.SelectedIndex++
 				}
+			case "pgup":
+				step := m.State.WindowHeight - 12
+				if step < 5 { step = 10 }
+				m.SelectedIndex -= step
+				if m.SelectedIndex < 0 {
+					m.SelectedIndex = 0
+				}
+			case "pgdown":
+				step := m.State.WindowHeight - 12
+				if step < 5 { step = 10 }
+				m.SelectedIndex += step
+				if m.SelectedIndex >= len(m.FileItems) {
+					m.SelectedIndex = len(m.FileItems) - 1
+					if m.SelectedIndex < 0 {
+						m.SelectedIndex = 0
+					}
+				}
 			case " ":
 				if len(m.FileItems) > 0 {
 					p := m.FileItems[m.SelectedIndex].Path
