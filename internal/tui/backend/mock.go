@@ -3,9 +3,11 @@ package backend
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
+	"scandoc/internal/tui/logger"
 	"scandoc/internal/tui/state"
 )
 
@@ -31,40 +33,67 @@ func (s *MockDocumentService) Export(ctx context.Context, path string, format st
 }
 
 type MockModelService struct {
-	installed map[string]bool
+	modelDir string
 }
 
 func NewMockModelService() *MockModelService {
-	return &MockModelService{
-		installed: map[string]bool{
-			"rapidocr_onnx":    true,
-			"rtdetr_doclaynet": true,
-			"slanet_table":     true,
-			"pix2text_formula": false,
-			"smolvlm_local":    false,
-		},
+	dir := "./local/scandoc/models"
+	_ = os.MkdirAll(dir, 0755)
+	
+	// Create dummy files for default installed models if they don't exist yet
+	defaultModels := []string{"rapidocr_onnx", "rtdetr_doclaynet", "slanet_table"}
+	for _, m := range defaultModels {
+		path := filepath.Join(dir, m+".bin")
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			os.WriteFile(path, []byte("dummy"), 0644)
+		}
 	}
+	
+	return &MockModelService{
+		modelDir: dir,
+	}
+}
+
+func (s *MockModelService) isInstalled(modelID string) bool {
+	path := filepath.Join(s.modelDir, modelID+".bin")
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 func (s *MockModelService) ListModels(ctx context.Context) ([]ModelInfo, error) {
 	return []ModelInfo{
-		{ModelID: "rapidocr_onnx", Name: "RapidOCR PP-OCRv4 ONNX", Installed: s.installed["rapidocr_onnx"], SizeBytes: 10857312},
-		{ModelID: "rtdetr_doclaynet", Name: "RT-DETR DocLayNet Layout Analyzer", Installed: s.installed["rtdetr_doclaynet"], SizeBytes: 44281920},
-		{ModelID: "slanet_table", Name: "SLANet Table Recognizer", Installed: s.installed["slanet_table"], SizeBytes: 18492000},
-		{ModelID: "pix2text_formula", Name: "Pix2Text LaTeX-OCR Vision Model", Installed: s.installed["pix2text_formula"], SizeBytes: 18920112},
-		{ModelID: "smolvlm_local", Name: "SmolVLM Multimodal Model", Installed: s.installed["smolvlm_local"], SizeBytes: 512000000},
+		{ModelID: "rapidocr_onnx", Name: "RapidOCR PP-OCRv4 ONNX", Installed: s.isInstalled("rapidocr_onnx"), SizeBytes: 10857312},
+		{ModelID: "rtdetr_doclaynet", Name: "RT-DETR DocLayNet Layout Analyzer", Installed: s.isInstalled("rtdetr_doclaynet"), SizeBytes: 44281920},
+		{ModelID: "slanet_table", Name: "SLANet Table Recognizer", Installed: s.isInstalled("slanet_table"), SizeBytes: 18492000},
+		{ModelID: "pix2text_formula", Name: "Pix2Text LaTeX-OCR Vision Model", Installed: s.isInstalled("pix2text_formula"), SizeBytes: 18920112},
+		{ModelID: "smolvlm_local", Name: "SmolVLM Multimodal Model", Installed: s.isInstalled("smolvlm_local"), SizeBytes: 512000000},
 	}, nil
 }
 
 func (s *MockModelService) DownloadModel(ctx context.Context, modelID string) error {
 	time.Sleep(100 * time.Millisecond)
-	s.installed[modelID] = true
-	return nil
+	path := filepath.Join(s.modelDir, modelID+".bin")
+	err := os.WriteFile(path, []byte("dummy data"), 0644)
+	if err == nil {
+		logger.LogAction("MODEL_DOWNLOAD", "Successfully downloaded model: "+modelID)
+	} else {
+		logger.LogAction("MODEL_DOWNLOAD_ERROR", "Failed to download model: "+modelID+" error: "+err.Error())
+	}
+	return err
 }
 
 func (s *MockModelService) ClearCache(ctx context.Context, modelID string) error {
-	s.installed[modelID] = false
-	return nil
+	path := filepath.Join(s.modelDir, modelID+".bin")
+	err := os.Remove(path)
+	if err == nil {
+		logger.LogAction("MODEL_UNINSTALL", "Successfully uninstalled model: "+modelID)
+	} else if os.IsNotExist(err) {
+		logger.LogAction("MODEL_UNINSTALL", "Model already uninstalled: "+modelID)
+		return nil
+	} else {
+		logger.LogAction("MODEL_UNINSTALL_ERROR", "Failed to uninstall model: "+modelID+" error: "+err.Error())
+	}
+	return err
 }
 
 type MockBenchmarkService struct{}

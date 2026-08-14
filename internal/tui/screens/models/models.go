@@ -15,9 +15,9 @@ func Render(st *state.AppState, modelList []backend.ModelInfo, selectedIdx int) 
 
 	b.WriteString(styles.NormalItemStyle.Render("Cache Location: ~/.cache/scandoc/models/") + "\n")
 	if st.IsOffline() {
-		b.WriteString(styles.BadgeAmber.Render("AIR-GAPPED OFFLINE MODE: Network model downloads disabled.") + "\n\n")
+		b.WriteString(styles.BadgeWarning.Render("AIR-GAPPED OFFLINE MODE: Network model downloads disabled.") + "\n\n")
 	} else {
-		b.WriteString(styles.BadgeGreen.Render("ONLINE MODE: Model downloading enabled.") + "\n\n")
+		b.WriteString(styles.BadgeSuccess.Render("ONLINE MODE: Model downloading enabled.") + "\n\n")
 	}
 
 	if len(modelList) == 0 {

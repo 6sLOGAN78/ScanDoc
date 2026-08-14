@@ -13,11 +13,11 @@ func Render(st *state.AppState, results map[string]any, isRunning bool) string {
 	b.WriteString(styles.HeaderStyle.Render(" Performance Benchmark Suite (scanDOC vs Docling) ") + "\n\n")
 
 	if isRunning {
-		b.WriteString(styles.BadgeAmber.Render("RUNNING BENCHMARK SUITE... Please wait.") + "\n\n")
+		b.WriteString(styles.BadgeWarning.Render("RUNNING BENCHMARK SUITE... Please wait.") + "\n\n")
 	} else if len(results) == 0 {
 		b.WriteString(styles.NormalItemStyle.Render("No benchmark results yet. Press 'r' or Enter to run the benchmark suite.") + "\n\n")
 	} else {
-		b.WriteString(styles.BadgeGreen.Render("BENCHMARK RESULTS COMPLETED") + "\n\n")
+		b.WriteString(styles.BadgeSuccess.Render("BENCHMARK RESULTS COMPLETED") + "\n\n")
 
 		scandocFPS, _ := results["scandoc_fps"].(float64)
 		doclingFPS, _ := results["docling_fps"].(float64)

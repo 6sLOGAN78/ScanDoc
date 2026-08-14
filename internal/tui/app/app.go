@@ -13,6 +13,7 @@ import (
 	"scandoc/internal/tui/commands"
 	"scandoc/internal/tui/controller"
 	"scandoc/internal/tui/events"
+	"scandoc/internal/tui/logger"
 	"scandoc/internal/tui/screens/benchmark"
 	"scandoc/internal/tui/screens/commandpalette"
 	"scandoc/internal/tui/screens/document"
@@ -145,6 +146,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		k := msg.String()
+		logger.LogKeyPress(k, string(m.State.CurrentScreen))
 
 		// Global Shortcuts
 		if k == "ctrl+c" {

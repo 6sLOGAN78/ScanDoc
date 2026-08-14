@@ -13,11 +13,11 @@ func Render(st *state.AppState) string {
 	b.WriteString(styles.HeaderStyle.Render(" REST API & Visual Studio Web Server Control ") + "\n\n")
 
 	if st.ServerRunning {
-		b.WriteString(styles.BadgeGreen.Render(fmt.Sprintf("● SERVER ACTIVE: Running on http://%s:%d", st.ServerHost, st.ServerPort)) + "\n\n")
+		b.WriteString(styles.BadgeSuccess.Render(fmt.Sprintf("● SERVER ACTIVE: Running on http://%s:%d", st.ServerHost, st.ServerPort)) + "\n\n")
 		b.WriteString(styles.ActiveItemStyle.Render(fmt.Sprintf("OpenAPI Specs : http://%s:%d/docs", st.ServerHost, st.ServerPort)) + "\n")
 		b.WriteString(styles.ActiveItemStyle.Render(fmt.Sprintf("Visual Studio : http://%s:%d/studio", st.ServerHost, st.ServerPort)) + "\n\n")
 	} else {
-		b.WriteString(styles.BadgeAmber.Render("○ SERVER STOPPED: Press 's' or Enter to start background server") + "\n\n")
+		b.WriteString(styles.BadgeWarning.Render("○ SERVER STOPPED: Press 's' or Enter to start background server") + "\n\n")
 		b.WriteString(styles.NormalItemStyle.Render(fmt.Sprintf("Configured Host : %s", st.ServerHost)) + "\n")
 		b.WriteString(styles.NormalItemStyle.Render(fmt.Sprintf("Configured Port : %d", st.ServerPort)) + "\n\n")
 	}

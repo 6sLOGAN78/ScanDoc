@@ -13,7 +13,7 @@ func Render(st *state.AppState) string {
 	var b strings.Builder
 	b.WriteString(styles.HeaderStyle.Render(" scanDOC Help & Keyboard Guide ") + "\n\n")
 
-	b.WriteString(lipgloss.NewStyle().Bold(true).Foreground(styles.TextHighlight).Render("Keyboard Navigation Cheat Sheet:") + "\n\n")
+	b.WriteString(lipgloss.NewStyle().Bold(true).Foreground(styles.AccentColor).Render("Keyboard Navigation Cheat Sheet:") + "\n\n")
 
 	shortcuts := [][2]string{
 		{"1 .. 9", "Quick navigate to menu options"},
