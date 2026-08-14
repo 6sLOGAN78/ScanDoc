@@ -6,7 +6,7 @@ Converts raw PDF extraction streams into a strongly typed, normalized DocumentIR
 
 import logging
 from pathlib import Path
-from typing import BinaryIO, Optional, Type, Union
+from typing import Any, BinaryIO, Optional, Type, Union
 
 from scandoc.models.blocks import BlockNode, FigureBlock, ImageRef, TextBlock, TextSpan
 from scandoc.models.document import (
@@ -32,10 +32,16 @@ class NativePdfExtractor:
     
     Extracts text streams, font metadata, embedded images, page attributes,
     and converts PDF coordinates into a unified DocumentIR graph.
+    Supports OCR routing for scanned or hybrid PDF pages.
     """
 
-    def __init__(self, backend_cls: Type[BasePdfBackend] = PyPdfium2Backend):
+    def __init__(
+        self,
+        backend_cls: Type[BasePdfBackend] = PyPdfium2Backend,
+        ocr_provider: Optional[Any] = None,
+    ):
         self._backend_cls = backend_cls
+        self._ocr_provider = ocr_provider
 
     def extract(
         self,
@@ -88,45 +94,76 @@ class NativePdfExtractor:
                 
                 page_blocks: list[BlockNode] = []
                 
-                # Convert Native Text Blocks
-                for txt_idx, raw_txt in enumerate(raw_page.text_blocks):
-                    block_id = f"p{page_index}-b{txt_idx}"
-                    bbox_norm = self._convert_pdf_bbox(
-                        raw_txt.bbox_pdf,
-                        raw_page.width,
-                        raw_page.height,
-                        raw_page.rotation,
-                        page_index,
-                    )
-                    
-                    spans = [
-                        TextSpan(
-                            text=s.text,
-                            start_char_idx=s.char_start,
-                            end_char_idx=s.char_end,
-                            bbox=self._convert_pdf_bbox(
-                                s.bbox_pdf,
-                                raw_page.width,
-                                raw_page.height,
-                                raw_page.rotation,
-                                page_index,
-                            ),
-                            confidence=1.0,
+                # Convert Native Text Blocks or Execute OCR for Scanned Pages
+                if raw_page.text_blocks:
+                    for txt_idx, raw_txt in enumerate(raw_page.text_blocks):
+                        block_id = f"p{page_index}-b{txt_idx}"
+                        bbox_norm = self._convert_pdf_bbox(
+                            raw_txt.bbox_pdf,
+                            raw_page.width,
+                            raw_page.height,
+                            raw_page.rotation,
+                            page_index,
                         )
-                        for s in raw_txt.spans
-                    ]
-                    
-                    txt_block = TextBlock(
-                        id=block_id,
-                        text=raw_txt.text,
-                        bbox=bbox_norm,
-                        spans=spans if spans else None,
-                        reading_order_index=len(global_reading_sequence),
-                        provenance=provenance,
+                        
+                        spans = [
+                            TextSpan(
+                                text=s.text,
+                                start_char_idx=s.char_start,
+                                end_char_idx=s.char_end,
+                                bbox=self._convert_pdf_bbox(
+                                    s.bbox_pdf,
+                                    raw_page.width,
+                                    raw_page.height,
+                                    raw_page.rotation,
+                                    page_index,
+                                ),
+                                confidence=1.0,
+                            )
+                            for s in raw_txt.spans
+                        ]
+                        
+                        txt_block = TextBlock(
+                            id=block_id,
+                            text=raw_txt.text,
+                            bbox=bbox_norm,
+                            spans=spans if spans else None,
+                            reading_order_index=len(global_reading_sequence),
+                            provenance=provenance,
+                        )
+                        page_blocks.append(txt_block)
+                        global_reading_sequence.append(block_id)
+                        body_block_ids.append(block_id)
+                elif self._ocr_provider and getattr(self._ocr_provider, "is_available", False):
+                    img_bytes = backend.render_page_image(page_index, dpi=150)
+                    ocr_res = self._ocr_provider.process_image(img_bytes)
+                    ocr_provenance = Provenance(
+                        provider=self._ocr_provider.provider_id,
+                        stage=ProcessingStage.OCR,
+                        confidence=0.95,
                     )
-                    page_blocks.append(txt_block)
-                    global_reading_sequence.append(block_id)
-                    body_block_ids.append(block_id)
+                    for txt_idx, reg in enumerate(ocr_res.regions):
+                        block_id = f"p{page_index}-ocr{txt_idx}"
+                        bbox_norm = BoundingBox(
+                            left=reg.bbox.left,
+                            top=reg.bbox.top,
+                            right=reg.bbox.right,
+                            bottom=reg.bbox.bottom,
+                            page_index=page_index,
+                            coord_origin=CoordOrigin.TOP_LEFT,
+                            unit=SizeUnit.NORMALIZED,
+                            is_normalized=True,
+                        )
+                        txt_block = TextBlock(
+                            id=block_id,
+                            text=reg.text,
+                            bbox=bbox_norm,
+                            reading_order_index=len(global_reading_sequence),
+                            provenance=ocr_provenance,
+                        )
+                        page_blocks.append(txt_block)
+                        global_reading_sequence.append(block_id)
+                        body_block_ids.append(block_id)
 
                 # Convert Embedded Image Figures
                 for img_idx, raw_img in enumerate(raw_page.images):

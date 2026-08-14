@@ -26,9 +26,13 @@ class ModelDownloader:
     performs disk space verification, enforces offline mode, and completes atomic installations into ModelStore.
     """
 
-    def __init__(self, store: ModelStore, offline: bool = False):
+    def __init__(self, store: ModelStore, offline: Optional[bool] = None):
         self._store = store
-        self._offline = offline
+        if offline is not None:
+            self._offline = offline
+        else:
+            import os
+            self._offline = os.getenv("SCANDOC_OFFLINE", "0").lower() in ("1", "true", "yes")
 
     @property
     def offline(self) -> bool:

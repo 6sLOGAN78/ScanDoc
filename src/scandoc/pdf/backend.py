@@ -284,6 +284,17 @@ class PyPdfium2Backend(BasePdfBackend):
             pass
         return links
 
+    def render_page_image(self, page_index: int, dpi: int = 150) -> bytes:
+        """Render page to PNG image bytes at target DPI for OCR processing."""
+        if self._pdf is None:
+            raise PdfInspectionError("Backend document is not open")
+        page = self._pdf[page_index]
+        scale = dpi / 72.0
+        pil_image = page.render(scale=scale).to_pil()
+        buf = io.BytesIO()
+        pil_image.save(buf, format="PNG")
+        return buf.getvalue()
+
     def close(self) -> None:
         if self._pdf is not None:
             self._pdf.close()
