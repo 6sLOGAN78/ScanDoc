@@ -297,3 +297,15 @@
 2026/08/15 03:04:59 [KEYPRESS] Key: 'down' | Screen: export
 2026/08/15 03:05:02 [KEYPRESS] Key: 'enter' | Screen: export
 2026/08/15 03:05:04 [KEYPRESS] Key: 'esc' | Screen: export
+2026/08/15 03:05:10 [KEYPRESS] Key: 'left' | Screen: home
+2026/08/15 03:05:10 [KEYPRESS] Key: 'down' | Screen: home
+2026/08/15 03:05:11 [KEYPRESS] Key: 'down' | Screen: home
+2026/08/15 03:05:12 [KEYPRESS] Key: 'enter' | Screen: home
+2026/08/15 03:05:13 [KEYPRESS] Key: 'left' | Screen: pipeline_config
+2026/08/15 03:05:58 [KEYPRESS] Key: '`' | Screen: pipeline_config
+2026/08/15 03:05:59 [KEYPRESS] Key: 'esc' | Screen: pipeline_config
+2026/08/15 03:05:59 [KEYPRESS] Key: 'esc' | Screen: pipeline_config
+2026/08/15 03:08:21 [KEYPRESS] Key: 'esc' | Screen: pipeline_config
+2026/08/15 03:08:23 [KEYPRESS] Key: 'esc' | Screen: pipeline_config
+2026/08/15 03:08:23 [KEYPRESS] Key: 'q' | Screen: pipeline_config
+2026/08/15 03:08:23 [ACTION] APP_EXIT - scanDOC TUI exited cleanly

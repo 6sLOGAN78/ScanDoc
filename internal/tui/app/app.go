@@ -116,9 +116,15 @@ func (m *MainModel) refreshFileItems() {
 }
 
 func (m *MainModel) refreshWorkspaceItems() {
-	items, err := m.Controller.ListDirectoryFiles(m.State.WorkspaceDir)
+	if m.Controller == nil || m.State.WorkspaceDir == "" {
+		m.WorkspaceItems = []controller.FileItem{}
+		return
+	}
+	items, err := m.Controller.ListWorkspaceFiles(m.State.WorkspaceDir)
 	if err == nil {
 		m.WorkspaceItems = items
+	} else {
+		m.WorkspaceItems = []controller.FileItem{}
 	}
 }
 
