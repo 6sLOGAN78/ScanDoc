@@ -176,7 +176,10 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.State.SelectedPaths = append(m.State.SelectedPaths, p)
 				}
 			case "enter":
-				if len(m.FileItems) > 0 {
+				if len(m.State.SelectedPaths) > 0 {
+					m.Controller.StartProcessing(context.Background(), m.State.SelectedPaths)
+					m.State.NavigateTo(state.ScreenProcessing)
+				} else if len(m.FileItems) > 0 {
 					item := m.FileItems[m.SelectedIndex]
 					if item.IsDir {
 						m.State.CurrentDir = item.Path

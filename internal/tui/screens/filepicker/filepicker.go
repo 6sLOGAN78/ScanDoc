@@ -50,6 +50,6 @@ func Render(st *state.AppState, items []controller.FileItem, selectedIdx int) st
 		}
 	}
 
-	b.WriteString("\n" + styles.FooterStyle.Render("Space: select | Enter: open/process | Backspace/b: parent directory | Esc: Home"))
+	b.WriteString("\n" + styles.FooterStyle.Render("Space: select | Enter: open/process selected | Backspace/b: parent directory | Esc: Home"))
 	return styles.PanelStyle.Render(b.String())
 }
