@@ -8,39 +8,100 @@ import (
 	"scandoc/internal/tui/styles"
 )
 
+var pipelineStages = []string{
+	"Parse",
+	"Extract",
+	"Preprocess",
+	"OCR",
+	"Layout",
+	"Tables",
+	"Figures",
+	"Chunk",
+	"Index",
+}
+
 func Render(st *state.AppState) string {
 	var b strings.Builder
-	b.WriteString(styles.HeaderStyle.Render(" Pipeline Processing Monitor ") + "\n\n")
+	
+	docName := st.ActiveDocumentName
+	if docName == "" {
+		docName = "document"
+	}
 
-	b.WriteString(styles.ActiveItemStyle.Render(fmt.Sprintf("Status : %s", strings.ToUpper(st.ProcessingStatus))) + "\n")
-	b.WriteString(styles.NormalItemStyle.Render(fmt.Sprintf("Stage  : %s", st.ProgressStage)) + "\n\n")
+	b.WriteString(styles.TitleStyle.Render(fmt.Sprintf("Processing %s", docName)) + "\n\n")
 
-	// Render Progress Bar
-	barLen := 40
+	// Current Stage Header
+	stage := st.ProgressStage
+	if stage == "" {
+		stage = "Initializing"
+	}
+	b.WriteString(styles.SectionStyle.Render(strings.ToUpper(stage)) + "\n\n")
+
+	// Page info & Progress Bar
+	if st.TotalPages > 0 {
+		b.WriteString(styles.NormalItemStyle.Render(fmt.Sprintf("Page %d / %d", st.CurrentPage, st.TotalPages)) + "\n")
+	}
+
+	barLen := 30
 	filled := int(float64(barLen) * st.ProgressPct / 100.0)
 	if filled > barLen {
 		filled = barLen
 	}
-	bar := strings.Repeat("=", filled) + strings.Repeat("-", barLen-filled)
-	b.WriteString(styles.ActiveItemStyle.Render(fmt.Sprintf("[%s] %5.1f%%", bar, st.ProgressPct)) + "\n\n")
+	bar := strings.Repeat("█", filled) + strings.Repeat("░", barLen-filled)
+	
+	b.WriteString(styles.PrimaryStyle.Render(fmt.Sprintf("%s  %d%%", bar, int(st.ProgressPct))) + "\n\n")
 
+	// Pipeline visualization
+	b.WriteString(styles.SectionStyle.Render("Pipeline") + "\n\n")
+	
+	currentIdx := -1
+	for i, s := range pipelineStages {
+		if strings.EqualFold(s, st.ProgressStage) {
+			currentIdx = i
+			break
+		}
+	}
+	
+	if st.ProcessingStatus == "completed" {
+		currentIdx = len(pipelineStages)
+	}
+
+	for i, s := range pipelineStages {
+		prefix := "○"
+		style := styles.MutedStyle
+		
+		if i < currentIdx {
+			prefix = "✓"
+			style = styles.BadgeSuccess
+		} else if i == currentIdx {
+			prefix = "●"
+			style = styles.PrimaryStyle
+		}
+		
+		if st.ProcessingStatus == "failed" && i == currentIdx {
+			prefix = "✕"
+			style = styles.BadgeError
+		}
+
+		b.WriteString(style.Render(fmt.Sprintf("  %s %s", prefix, s)) + "\n")
+	}
+	b.WriteString("\n")
+
+	// Logs
 	if len(st.ProcessingErrors) > 0 {
-		b.WriteString(styles.HeaderStyle.Render(" Errors ") + "\n")
+		b.WriteString(styles.SectionStyle.Render("Errors") + "\n\n")
 		for _, errStr := range st.ProcessingErrors {
-			b.WriteString(styles.NormalItemStyle.Render("❌ "+errStr) + "\n")
+			b.WriteString(styles.BadgeError.Render("  ! "+errStr) + "\n")
 		}
 		b.WriteString("\n")
 	}
 
-	b.WriteString(styles.HeaderStyle.Render(" Recent Telemetry Logs ") + "\n")
-	logStart := 0
-	if len(st.ProcessingLogs) > 8 {
-		logStart = len(st.ProcessingLogs) - 8
+	sepWidth := st.WindowWidth - 25
+	if sepWidth < 10 {
+		sepWidth = 50
 	}
-	for _, logLine := range st.ProcessingLogs[logStart:] {
-		b.WriteString(styles.NormalItemStyle.Render("• "+logLine) + "\n")
-	}
-
-	b.WriteString("\n" + styles.FooterStyle.Render("Press Esc or Enter to return to Home Dashboard | Esc cancels pipeline"))
-	return styles.PanelStyle.Render(b.String())
+	
+	b.WriteString(styles.MutedStyle.Render(strings.Repeat("─", sepWidth)) + "\n")
+	b.WriteString(styles.FooterStyle.Render("c Cancel   p Pause   l Logs   Esc Back"))
+	return b.String()
 }

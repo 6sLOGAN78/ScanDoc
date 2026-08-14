@@ -10,40 +10,55 @@ import (
 
 func Render(st *state.AppState, selectedIdx int) string {
 	var b strings.Builder
-	b.WriteString(styles.HeaderStyle.Render(" DocumentIR Inspector & Structural Tree ") + "\n\n")
-
+	
 	if st.ActiveDocumentPath == "" {
-		b.WriteString(styles.NormalItemStyle.Render("No active document loaded for inspection.") + "\n")
-		b.WriteString(styles.NormalItemStyle.Render("Select a file or folder from the main menu [1] or [2] to process a document first.") + "\n")
-	} else {
-		b.WriteString(styles.ActiveItemStyle.Render(fmt.Sprintf("Active File : %s", st.ActiveDocumentName)) + "\n")
-		b.WriteString(styles.NormalItemStyle.Render(fmt.Sprintf("Disk Path   : %s", st.ActiveDocumentPath)) + "\n")
-		b.WriteString(styles.NormalItemStyle.Render(fmt.Sprintf("Page Count  : %d pages", st.TotalPages)) + "\n\n")
+		b.WriteString(styles.TitleStyle.Render("Inspector") + "\n\n")
+		b.WriteString(styles.MutedStyle.Render("  No document selected.") + "\n")
+		b.WriteString("\n" + styles.FooterStyle.Render("Esc Back"))
+		return b.String()
+	}
 
-		b.WriteString(styles.HeaderStyle.Render(" Extracted Structural Nodes ") + "\n")
+	docName := st.ActiveDocumentName
+	if docName == "" {
+		docName = "document"
+	}
 
-		sampleBlocks := []struct {
-			ID   string
-			Type string
-			Text string
-			BBox string
-		}{
-			{"blk_h1_0", "HEADING (H1)", "Executive Overview & Summary", "[0.08, 0.06, 0.92, 0.10]"},
-			{"blk_p_1", "PARAGRAPH", "This document contains processed invoice and table metrics.", "[0.08, 0.12, 0.92, 0.25]"},
-			{"blk_tbl_2", "TABLE (2x2)", "Table 1: Quarterly Revenue Breakdown", "[0.08, 0.28, 0.92, 0.55]"},
-			{"blk_math_3", "FORMULA", "$$E = mc^2$$ (LaTeX)", "[0.08, 0.58, 0.92, 0.65]"},
-		}
+	// Breadcrumb header
+	b.WriteString(styles.TitleStyle.Render(fmt.Sprintf("%s / Page %d", docName, st.CurrentPage)) + "\n\n")
 
-		for i, block := range sampleBlocks {
-			line := fmt.Sprintf("[%s] %-15s | %-38s | BBox: %s", block.ID, block.Type, block.Text, block.BBox)
-			if i == selectedIdx {
-				b.WriteString(styles.ActiveItemStyle.Render("› "+line) + "\n")
-			} else {
-				b.WriteString(styles.NormalItemStyle.Render("  "+line) + "\n")
-			}
+	// Tabs mock
+	b.WriteString(styles.PrimaryStyle.Render("  Content") + "   " + 
+				  styles.MutedStyle.Render("Layout   JSON   Relations") + "\n\n")
+
+	sampleBlocks := []struct {
+		ID   string
+		Type string
+		Text string
+		BBox string
+	}{
+		{"blk_01", "Heading", "Executive Overview & Summary", "0.08, 0.06"},
+		{"blk_02", "Paragraph", "This document contains processed invoice metrics.", "0.08, 0.12"},
+		{"blk_03", "Table", "Table 1: Quarterly Revenue Breakdown", "0.08, 0.28"},
+		{"blk_04", "Formula", "$$E = mc^2$$", "0.08, 0.58"},
+	}
+
+	for i, block := range sampleBlocks {
+		if i == selectedIdx {
+			b.WriteString(styles.SelectedItemStyle.Render(fmt.Sprintf("> %s", block.Type)) + "\n")
+			b.WriteString(styles.PrimaryStyle.Render(fmt.Sprintf("  %s", block.Text)) + "\n")
+			b.WriteString(styles.MutedStyle.Render(fmt.Sprintf("  ID: %s   Pos: [%s]", block.ID, block.BBox)) + "\n\n")
+		} else {
+			b.WriteString(styles.SecondaryStyle.Render(fmt.Sprintf("  %s", block.Type)) + "\n")
+			b.WriteString(styles.MutedStyle.Render(fmt.Sprintf("  %s", block.Text)) + "\n\n")
 		}
 	}
 
-	b.WriteString("\n" + styles.FooterStyle.Render("Press Esc or Enter to return to Home Dashboard."))
-	return styles.PanelStyle.Render(b.String())
+	sepWidth := st.WindowWidth - 25
+	if sepWidth < 10 {
+		sepWidth = 50
+	}
+	
+	b.WriteString(styles.MutedStyle.Render(strings.Repeat("─", sepWidth)) + "\n")
+	b.WriteString(styles.FooterStyle.Render("↑/↓ Navigate   Tab Switch view   Esc Back"))
+	return b.String()
 }

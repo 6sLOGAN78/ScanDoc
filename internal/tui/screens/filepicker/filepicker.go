@@ -11,16 +11,12 @@ import (
 
 func Render(st *state.AppState, items []controller.FileItem, selectedIdx int) string {
 	var b strings.Builder
-	title := " File Browser "
-	if st.CurrentScreen == state.ScreenFolderPicker {
-		title = " Folder Workspace Browser "
-	}
-	b.WriteString(styles.HeaderStyle.Render(title) + "\n\n")
-
-	b.WriteString(styles.NormalItemStyle.Render(fmt.Sprintf("Directory: %s", st.CurrentDir)) + "\n\n")
+	
+	// Header
+	b.WriteString(styles.TitleStyle.Render(st.CurrentDir) + "\n\n")
 
 	if len(items) == 0 {
-		b.WriteString(styles.NormalItemStyle.Render("Directory is empty.") + "\n")
+		b.WriteString(styles.MutedStyle.Render("  Directory is empty.") + "\n")
 	} else {
 		// Calculate visible window
 		visibleCount := st.WindowHeight - 12
@@ -42,21 +38,24 @@ func Render(st *state.AppState, items []controller.FileItem, selectedIdx int) st
 		}
 
 		if startIdx > 0 {
-			b.WriteString(styles.NormalItemStyle.Render("  ↑ ..."))
+			b.WriteString(styles.MutedStyle.Render("  ↑ ..."))
 			b.WriteString("\n")
 		}
 
 		for i := startIdx; i < endIdx; i++ {
 			item := items[i]
-			icon := "📄"
+			
+			typeDesc := "FILE"
 			if item.IsDir {
-				icon = "📁"
+				typeDesc = "<DIR>"
+			} else if item.FormatDesc != "" {
+				typeDesc = strings.ToUpper(item.FormatDesc)
 			}
 
 			selectedTag := " "
 			for _, p := range st.SelectedPaths {
 				if p == item.Path {
-					selectedTag = "✓"
+					selectedTag = "*"
 					break
 				}
 			}
@@ -64,22 +63,39 @@ func Render(st *state.AppState, items []controller.FileItem, selectedIdx int) st
 			sizeStr := ""
 			if !item.IsDir {
 				sizeStr = fmt.Sprintf("%d KB", item.SizeBytes/1024)
+				if item.SizeBytes > 1024*1024 {
+					sizeStr = fmt.Sprintf("%d MB", item.SizeBytes/(1024*1024))
+				}
 			}
 
-			line := fmt.Sprintf("[%s] %s %-35s %-8s %s", selectedTag, icon, item.Name, item.FormatDesc, sizeStr)
+			// Format: [tag] <DIR> name  size
+			// e.g.  *  <DIR> projects/
+			//       PDF   thesis.pdf   12 MB
+			
+			nameStr := item.Name
+			if item.IsDir {
+				nameStr += "/"
+			}
+
+			line := fmt.Sprintf("%s  %-6s %-35s %s", selectedTag, typeDesc, nameStr, sizeStr)
 			if i == selectedIdx {
-				b.WriteString(styles.ActiveItemStyle.Render("› "+line) + "\n")
+				b.WriteString(styles.SelectedItemStyle.Render(">"+line[1:]) + "\n")
 			} else {
-				b.WriteString(styles.NormalItemStyle.Render("  "+line) + "\n")
+				b.WriteString(styles.NormalItemStyle.Render(" "+line[1:]) + "\n")
 			}
 		}
 
 		if endIdx < len(items) {
-			b.WriteString(styles.NormalItemStyle.Render("  ↓ ..."))
+			b.WriteString(styles.MutedStyle.Render("  ↓ ..."))
 			b.WriteString("\n")
 		}
 	}
 
-	b.WriteString("\n" + styles.FooterStyle.Render("Space: select | Enter: open/process selected | Backspace/b: parent directory | Esc: Home"))
-	return styles.PanelStyle.Render(b.String())
+	sepWidth := st.WindowWidth - 25
+	if sepWidth < 10 {
+		sepWidth = 50
+	}
+	b.WriteString("\n" + styles.MutedStyle.Render(strings.Repeat("─", sepWidth)) + "\n")
+	b.WriteString(styles.FooterStyle.Render("Enter Open    Space Select    Backspace Up    / Search"))
+	return b.String()
 }

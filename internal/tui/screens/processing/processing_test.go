@@ -14,11 +14,11 @@ func TestProcessingRender(t *testing.T) {
 	st.ProgressStage = "OCR Stage"
 
 	view := Render(st)
-	if !strings.Contains(view, "Pipeline Processing Monitor") {
+	if !strings.Contains(view, "Processing") {
 		t.Errorf("Expected title in view, got: %s", view)
 	}
 
-	if !strings.Contains(view, "45.0%") {
-		t.Errorf("Expected 45.0%% progress in view, got: %s", view)
+	if !strings.Contains(view, "45%") {
+		t.Errorf("Expected 45%% progress in view, got: %s", view)
 	}
 }
