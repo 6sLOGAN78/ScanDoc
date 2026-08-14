@@ -72,11 +72,15 @@ def create_parser() -> argparse.ArgumentParser:
     # 4. BENCHMARK Subcommand
     bench_parser = subparsers.add_parser(
         "benchmark",
-        help="Run CPU pipeline multi-core performance throughput benchmarks",
+        help="Run CPU pipeline throughput & comparative accuracy benchmarks vs Docling",
     )
     bench_parser.add_argument("input", nargs="?", help="Optional document file or directory to benchmark")
+    bench_parser.add_argument("--implementation", choices=["scandoc", "docling", "both", "all"], default="scandoc", help="Engine implementation target (scandoc, docling, both)")
+    bench_parser.add_argument("--dataset", help="Path to custom benchmark dataset directory containing test files & JSON ground truths")
+    bench_parser.add_argument("--compare", action="store_true", help="Generate comparative side-by-side evaluation against Docling")
     bench_parser.add_argument("-w", "--workers", type=int, help="Specific worker thread count to benchmark")
-    bench_parser.add_argument("-n", "--iterations", type=int, default=20, help="Number of test document iterations (default: 20)")
+    bench_parser.add_argument("-n", "--iterations", type=int, default=5, help="Number of benchmark test iterations (default: 5)")
+    bench_parser.add_argument("--warmup", type=int, default=1, help="Number of unmeasured warmup iterations (default: 1)")
     bench_parser.add_argument(
         "--device", default="auto", choices=["auto", "cpu", "cuda", "openvino", "tensorrt", "mps"], help="Hardware device target"
     )

@@ -33,9 +33,21 @@ openvino = [
 pdf = [
     "pypdfium2>=4.0.0",
 ]
+benchmark = [
+    "psutil>=5.9.0",
+    "docling",
+]
+gpu = [
+    "onnxruntime-gpu>=1.16.0",
+]
+huggingface = [
+    "transformers>=4.36.0",
+    "torch>=2.1.0",
+]
 dev = [
     "pytest>=7.0.0",
     "mypy>=1.0.0",
+    "build>=1.0.0",
 ]
 
 [project.scripts]
