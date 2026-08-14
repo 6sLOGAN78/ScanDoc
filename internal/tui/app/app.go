@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -420,7 +422,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.SelectedIndex--
 				}
 			case "down", "s", "j":
-				if m.SelectedIndex < 3 {
+				if m.SelectedIndex < 5 {
 					m.SelectedIndex++
 				}
 			case " ", "enter":
@@ -442,6 +444,31 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							m.State.PrecisionMode = precs[(idx+1)%len(precs)]
 							break
 						}
+					}
+				case 4:
+					home, _ := os.UserHomeDir()
+					backupDir := filepath.Join(home, ".scandoc")
+					os.MkdirAll(backupDir, 0755)
+					cmd := exec.Command("cp", "-r", "./local/scandoc/.", backupDir)
+					err := cmd.Run()
+					if err == nil {
+						m.State.AddLog("Successfully backed up local data to " + backupDir)
+						logger.LogAction("BACKUP_SUCCESS", "Data backed up to ~/.scandoc")
+					} else {
+						m.State.AddLog("Failed to backup data: " + err.Error())
+						logger.LogAction("BACKUP_FAILED", err.Error())
+					}
+				case 5:
+					home, _ := os.UserHomeDir()
+					backupDir := filepath.Join(home, ".scandoc")
+					cmd := exec.Command("cp", "-r", backupDir+"/.", "./local/scandoc/")
+					err := cmd.Run()
+					if err == nil {
+						m.State.AddLog("Successfully restored local data from " + backupDir)
+						logger.LogAction("RESTORE_SUCCESS", "Data restored from ~/.scandoc")
+					} else {
+						m.State.AddLog("Failed to restore data: " + err.Error())
+						logger.LogAction("RESTORE_FAILED", err.Error())
 					}
 				}
 			}

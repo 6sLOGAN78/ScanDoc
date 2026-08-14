@@ -20,6 +20,8 @@ func Render(st *state.AppState, selectedIdx int) string {
 		{"Hardware Execution Device", strings.ToUpper(st.DeviceType)},
 		{"Quantization & Precision Mode", strings.ToUpper(st.PrecisionMode)},
 		{"Default Export Output Directory", st.ExportOutputDir},
+		{"Backup Local Data to System (~/.scandoc)", "[PRESS ENTER]"},
+		{"Restore Local Data from System (~/.scandoc)", "[PRESS ENTER]"},
 	}
 
 	for i, opt := range options {
