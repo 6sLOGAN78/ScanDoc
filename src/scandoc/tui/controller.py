@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from datetime import datetime
 from scandoc.acceleration import ExecutionManager, default_execution_manager
 from scandoc.benchmarks import BenchmarkConfig, BenchmarkRunner
 from scandoc.exporters import ExportOptions, default_exporter_registry
@@ -14,6 +15,8 @@ from scandoc.models_mgmt import default_model_manager
 from scandoc.pipelines import DocumentPipeline, PipelineConfig
 from scandoc.providers.ecosystem.registry import default_provider_registry
 from scandoc.server import ServerConfig, create_app
+from scandoc.tui.events import AppEvent, EventType, default_event_bus
+from scandoc.tui.job_manager import JobStatus, default_job_manager
 from scandoc.tui.state import ScreenType, TuiState
 
 logger = logging.getLogger("scandoc.tui.controller")
@@ -94,20 +97,48 @@ class TuiController:
             pipeline = DocumentPipeline(config=self.state.pipeline_config)
 
             for idx, path in enumerate(paths, start=1):
+                job = default_job_manager.create_job(path)
+                job.status = JobStatus.RUNNING
+                job.started_at = datetime.now()
+
+                default_event_bus.publish(AppEvent(
+                    event_type=EventType.PROCESSING_STARTED,
+                    payload={"path": str(path), "job_id": job.job_id},
+                    message=f"Started processing '{path.name}'",
+                ))
+
                 self.state.progress_stage = f"Processing ({idx}/{total}): {path.name}"
                 self.state.progress_pct = (idx - 1) / max(1, total) * 100.0
                 self.state.add_log(f"Starting processing for '{path.name}'")
 
                 res = pipeline.process(path)
                 if res.status == "success" and res.document_ir:
+                    job.status = JobStatus.COMPLETED
+                    job.finished_at = datetime.now()
+                    job.result_data = res.document_ir
+
                     self.state.active_document_ir = res.document_ir
                     self.state.active_document_path = path
                     self.state.add_recent(path, status="success")
                     self.state.add_log(f"Successfully processed '{path.name}' ({len(res.document_ir.pages)} pages)")
+
+                    default_event_bus.publish(AppEvent(
+                        event_type=EventType.PROCESSING_COMPLETED,
+                        payload={"path": str(path), "pages": len(res.document_ir.pages)},
+                        message=f"Completed '{path.name}'",
+                    ))
                 else:
                     err_msg = "; ".join(res.errors) if res.errors else "Unknown processing failure"
+                    job.status = JobStatus.FAILED
+                    job.error_message = err_msg
                     self.state.processing_errors.append(f"{path.name}: {err_msg}")
                     self.state.add_log(f"Error processing '{path.name}': {err_msg}")
+
+                    default_event_bus.publish(AppEvent(
+                        event_type=EventType.PROCESSING_FAILED,
+                        payload={"path": str(path), "error": err_msg},
+                        message=f"Failed '{path.name}': {err_msg}",
+                    ))
 
             self.state.progress_pct = 100.0
             self.state.progress_stage = "Processing Completed"
