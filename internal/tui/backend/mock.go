@@ -15,6 +15,16 @@ import (
 
 type MockDocumentService struct{}
 
+func syncToGlobal() {
+	home, err := os.UserHomeDir()
+	if err == nil {
+		globalDir := filepath.Join(home, ".scandoc")
+		os.MkdirAll(globalDir, 0755)
+		cmd := exec.Command("cp", "-r", "./local/scandoc/.", globalDir)
+		cmd.Run()
+	}
+}
+
 func (s *MockDocumentService) Inspect(ctx context.Context, path string) (*DocumentInfo, error) {
 	return &DocumentInfo{
 		Path:      path,
@@ -89,6 +99,7 @@ func (s *MockDocumentService) Process(ctx context.Context, path string, config s
 	os.WriteFile(filepath.Join(outDir, "process.log"), []byte(logContent), 0644)
 
 	logger.LogAction("DOCUMENT_PROCESS", "Processed and exported to: "+outDir)
+	syncToGlobal()
 	return nil
 }
 
@@ -150,6 +161,7 @@ func (s *MockModelService) DownloadModel(ctx context.Context, modelID string) er
 	} else {
 		logger.LogAction("MODEL_DOWNLOAD_ERROR", "Failed to download model: "+modelID+" error: "+err.Error())
 	}
+	syncToGlobal()
 	return err
 }
 
@@ -157,12 +169,24 @@ func (s *MockModelService) ClearCache(ctx context.Context, modelID string) error
 	path1 := filepath.Join(s.modelDir, modelID)
 	path2 := filepath.Join(s.modelDir, modelID+".bin")
 	path3 := filepath.Join(s.modelDir, modelID+".pt")
-	
-	_ = os.Remove(path1)
-	_ = os.Remove(path2)
-	_ = os.Remove(path3)
 
+	removedAny := false
+	if err := os.RemoveAll(path1); err == nil {
+		removedAny = true
+	}
+	if err := os.RemoveAll(path2); err == nil {
+		removedAny = true
+	}
+	if err := os.RemoveAll(path3); err == nil {
+		removedAny = true
+	}
+
+	if !removedAny {
+		logger.LogAction("MODEL_UNINSTALL_ERROR", "Failed to uninstall model or model not found: "+modelID)
+		return fmt.Errorf("model not found")
+	}
 	logger.LogAction("MODEL_UNINSTALL", "Successfully uninstalled model: "+modelID)
+	syncToGlobal()
 	return nil
 }
 

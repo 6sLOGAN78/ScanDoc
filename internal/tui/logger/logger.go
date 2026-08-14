@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,7 +26,21 @@ func Init() error {
 		return err
 	}
 
-	logger = log.New(logFile, "", log.LstdFlags)
+	// Also setup global log file
+	home, _ := os.UserHomeDir()
+	globalLogDir := filepath.Join(home, ".scandoc", "logs")
+	os.MkdirAll(globalLogDir, 0755)
+	globalPath := filepath.Join(globalLogDir, "events.log")
+	globalLogFile, err := os.OpenFile(globalPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	
+	var writers []io.Writer
+	writers = append(writers, logFile)
+	if err == nil {
+		writers = append(writers, globalLogFile)
+	}
+	
+	multiWriter := io.MultiWriter(writers...)
+	logger = log.New(multiWriter, "", log.LstdFlags)
 	return nil
 }
 
