@@ -3,7 +3,8 @@ Central ExecutionManager managing session pools, device selection, and backend o
 """
 
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from scandoc.acceleration.backends import (
     CpuExecutionBackend,
@@ -15,13 +16,15 @@ from scandoc.acceleration.base import BaseExecutionBackend
 from scandoc.acceleration.discovery import DeviceDiscovery
 from scandoc.acceleration.exceptions import BackendUnavailableError, DeviceNotFoundError
 from scandoc.acceleration.models import DeviceContext, DeviceType, PrecisionMode
+from scandoc.acceleration.multi_gpu import MultiGpuExecutionPool
+from scandoc.acceleration.quantization import ModelQuantizer, QuantizationConfig
 
 logger = logging.getLogger("scandoc.acceleration.manager")
 
 
 class ExecutionManager:
     """
-    Orchestrates hardware devices, session pools, and backend selection.
+    Orchestrates hardware devices, session pools, quantization, and backend selection.
     """
 
     def __init__(self, register_defaults: bool = True):
@@ -58,17 +61,21 @@ class ExecutionManager:
     def select_device(self, requested_device: str = "auto") -> DeviceContext:
         """
         Deterministically select an available DeviceContext based on hardware discovery and requested strategy.
-        
-        Args:
-            requested_device: String identifier ('auto', 'cpu', 'cuda', 'openvino', 'tensorrt', 'mps').
-            
-        Returns:
-            Verified available DeviceContext.
         """
         req_clean = requested_device.lower().strip()
 
         # Explicit CPU request
         if req_clean == "cpu":
+            return DeviceContext(device_type=DeviceType.CPU, backend="onnxruntime")
+
+        # Explicit TensorRT request
+        if req_clean.startswith("tensorrt"):
+            if DeviceDiscovery.is_tensorrt_available():
+                return DeviceContext(device_type=DeviceType.TENSORRT, device_index=0, backend="tensorrt", precision=PrecisionMode.FP16)
+            elif DeviceDiscovery.is_cuda_available():
+                logger.warning("TensorRT runtime unavailable. Falling back to CUDA GPU execution.")
+                return DeviceContext(device_type=DeviceType.CUDA, device_index=0, backend="onnxruntime", precision=PrecisionMode.FP16)
+            logger.warning("Requested TensorRT device unavailable. Falling back to CPU.")
             return DeviceContext(device_type=DeviceType.CPU, backend="onnxruntime")
 
         # Explicit CUDA request
@@ -91,7 +98,10 @@ class ExecutionManager:
             logger.warning("Requested OpenVINO device unavailable. Falling back to CPU.")
             return DeviceContext(device_type=DeviceType.CPU, backend="onnxruntime")
 
-        # Auto Selection Priority: CUDA -> OpenVINO -> CPU
+        # Auto Selection Priority: TensorRT -> CUDA -> OpenVINO -> CPU
+        if DeviceDiscovery.is_tensorrt_available():
+            return DeviceContext(device_type=DeviceType.TENSORRT, device_index=0, backend="tensorrt", precision=PrecisionMode.FP16)
+
         if DeviceDiscovery.is_cuda_available():
             return DeviceContext(device_type=DeviceType.CUDA, device_index=0, backend="onnxruntime", precision=PrecisionMode.FP16)
 
@@ -100,6 +110,35 @@ class ExecutionManager:
 
         # Default CPU fallback
         return DeviceContext(device_type=DeviceType.CPU, backend="onnxruntime")
+
+    def get_onnx_execution_providers(self, context: Optional[DeviceContext] = None) -> List[str]:
+        """
+        Return list of ONNX Runtime execution provider names ordered by hardware priority.
+        """
+        ctx = context or self.select_device("auto")
+        providers = []
+
+        if ctx.device_type == DeviceType.TENSORRT and DeviceDiscovery.is_tensorrt_available():
+            providers.extend(["TensorRTExecutionProvider", "CUDAExecutionProvider"])
+        elif ctx.device_type == DeviceType.CUDA and DeviceDiscovery.is_cuda_available():
+            providers.append("CUDAExecutionProvider")
+        elif ctx.device_type == DeviceType.OPENVINO and DeviceDiscovery.is_openvino_available():
+            providers.append("OpenVINOExecutionProvider")
+
+        providers.append("CPUExecutionProvider")
+        return providers
+
+    def create_multi_gpu_pool(self, device_indices: Optional[List[int]] = None) -> MultiGpuExecutionPool:
+        """Create a MultiGpuExecutionPool for batch parallel document processing."""
+        return MultiGpuExecutionPool(device_indices=device_indices)
+
+    def quantize_model(
+        self,
+        model_path: Union[str, Path],
+        precision: PrecisionMode = PrecisionMode.FP16,
+    ) -> Path:
+        """Quantize model file to FP16 or INT8 precision."""
+        return ModelQuantizer.quantize_onnx_model(model_path, config=QuantizationConfig(precision=precision))
 
     def get_or_create_session(self, session_key: str, create_fn: Callable[[], Any]) -> Any:
         """

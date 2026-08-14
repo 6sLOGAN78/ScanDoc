@@ -26,6 +26,8 @@ from scandoc.acceleration.models import (
     DeviceType,
     PrecisionMode,
 )
+from scandoc.acceleration.multi_gpu import MultiGpuExecutionPool
+from scandoc.acceleration.quantization import ModelQuantizer, QuantizationConfig
 
 __all__ = [
     "DeviceType",
@@ -41,6 +43,9 @@ __all__ = [
     "TensorRtExecutionBackend",
     "ExecutionManager",
     "default_execution_manager",
+    "ModelQuantizer",
+    "QuantizationConfig",
+    "MultiGpuExecutionPool",
     "BenchmarkRunner",
     "BenchmarkReport",
     "ExecutionEngineError",
