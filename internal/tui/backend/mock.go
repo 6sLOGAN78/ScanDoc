@@ -24,6 +24,25 @@ func (s *MockDocumentService) Inspect(ctx context.Context, path string) (*Docume
 
 func (s *MockDocumentService) Process(ctx context.Context, path string, config state.PipelineConfig) error {
 	time.Sleep(100 * time.Millisecond)
+
+	outDir := filepath.Join("./local/scandoc/output", filepath.Base(path))
+	os.MkdirAll(outDir, 0755)
+
+	// Simulate copying the original file
+	info, err := os.Stat(path)
+	if err == nil && !info.IsDir() {
+		inputData, _ := os.ReadFile(path)
+		os.WriteFile(filepath.Join(outDir, filepath.Base(path)), inputData, 0644)
+	} else if err == nil && info.IsDir() {
+		// Just a dummy file to represent the scanned folder original
+		os.WriteFile(filepath.Join(outDir, "scanned_folder_index.txt"), []byte("folder scanned: "+path), 0644)
+	}
+
+	// Output chunks
+	chunksData := `{"chunks": [{"id": 1, "text": "Extracted text chunk 1"}, {"id": 2, "text": "Extracted text chunk 2"}]}`
+	os.WriteFile(filepath.Join(outDir, "chunks.json"), []byte(chunksData), 0644)
+
+	logger.LogAction("DOCUMENT_PROCESS", "Processed and exported to: "+outDir)
 	return nil
 }
 
