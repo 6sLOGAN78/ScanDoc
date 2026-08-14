@@ -6,6 +6,9 @@ import argparse
 from typing import List, Optional
 
 
+from scandoc import __version__
+
+
 def create_parser() -> argparse.ArgumentParser:
     """
     Build argparse ArgumentParser for scanDOC CLI commands and options.
@@ -15,7 +18,7 @@ def create_parser() -> argparse.ArgumentParser:
         description="scanDOC: Next-Generation Document Intelligence Engine",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--version", action="version", version="scanDOC 0.1.0")
+    parser.add_argument("--version", action="version", version=f"scanDOC {__version__}")
 
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
 

@@ -9,7 +9,23 @@ description = "Next-Generation Open-Source Document Intelligence Engine"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
+authors = [
+    { name = "scanDOC Contributors" }
+]
+keywords = [
+    "document-intelligence",
+    "pdf-parser",
+    "ocr",
+    "table-extraction",
+    "layout-analysis",
+    "vlm",
+    "markdown-converter",
+    "rag",
+]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -17,6 +33,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: General",
 ]
 
 dependencies = [
@@ -33,6 +50,11 @@ openvino = [
 pdf = [
     "pypdfium2>=4.0.0",
 ]
+server = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "httpx>=0.24.0",
+]
 benchmark = [
     "psutil>=5.9.0",
     "docling",
@@ -48,7 +70,22 @@ dev = [
     "pytest>=7.0.0",
     "mypy>=1.0.0",
     "build>=1.0.0",
+    "twine>=4.0.0",
 ]
+all = [
+    "pypdfium2>=4.0.0",
+    "onnxruntime>=1.16.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "httpx>=0.24.0",
+    "psutil>=5.9.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/6sLOGAN78/ScanDoc"
+Documentation = "https://github.com/6sLOGAN78/ScanDoc/tree/main/docs"
+Repository = "https://github.com/6sLOGAN78/ScanDoc.git"
+"Bug Tracker" = "https://github.com/6sLOGAN78/ScanDoc/issues"
 
 [project.scripts]
 scandoc = "scandoc.cli:main"
@@ -59,4 +96,3 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests"]
 testpaths = ["tests"]
-

@@ -1,4 +1,4 @@
-name: scanDOC Release CI
+name: scanDOC Production Release & Package CI
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test-and-build:
+  validate-and-package:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -23,11 +23,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Dependencies
+      - name: Install Build & Development Tools
         run: |
           python -m pip install --upgrade pip
-          pip install build pytest
-          pip install -e .[dev,pdf]
+          pip install build twine pytest
+          pip install -e .[dev,pdf,server]
 
       - name: Run Pytest Suite
         run: |
@@ -37,15 +37,33 @@ jobs:
         run: |
           python -m build
 
-      - name: Verify Package Wheel Artifacts
+      - name: Validate PyPI Wheel & Package Metadata
         run: |
-          python -m pip install twine
           twine check dist/*
 
-      - name: Test Wheel Installation in Clean Environment
+      - name: Test Local-First Clean Wheel Installation
         run: |
-          python -m venv test_env
-          source test_env/bin/activate
+          python -m venv clean_env
+          source clean_env/bin/activate
           pip install dist/*.whl
+          scandoc --version
           scandoc --help
-          python -c "import scandoc; print(scandoc.__name__)"
+          scandoc inspect --help
+          scandoc convert --help
+          scandoc serve --help
+          scandoc benchmark --help
+          python -c "import scandoc; print(scandoc.__version__)"
+
+      - name: Test Server Extra Clean Installation
+        run: |
+          python -m venv server_env
+          source server_env/bin/activate
+          pip install dist/*.whl[server]
+          scandoc serve --json
+
+      - name: Upload Release Artifacts
+        if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: scandoc-dist-${{ matrix.python-version }}
+          path: dist/
