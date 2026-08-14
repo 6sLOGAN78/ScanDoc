@@ -70,6 +70,15 @@ class ModelRegistry:
                 supported_devices=["cpu"],
                 state=ModelState.READY,
             ),
+            ModelSpec(
+                model_id="pix2text_formula",
+                provider="local_formula_recognizer",
+                model_name="Pix2Text LaTeX Formula Vision Model",
+                architecture="LaTeX-OCR",
+                task=TaskType.FORMULA,
+                supported_devices=["cpu", "cuda"],
+                state=ModelState.READY,
+            ),
         ]
         for m in defaults:
             self.register(m)

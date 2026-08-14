@@ -13,6 +13,11 @@ class FormulaProviderUnavailableError(FormulaError):
     pass
 
 
+class FormulaInitializationError(FormulaError):
+    """Raised when formula model initialization fails."""
+    pass
+
+
 class PrivacyViolationError(FormulaError):
     """Raised when a remote formula provider is invoked without explicit authorization."""
     pass
