@@ -5,6 +5,7 @@ Comprehensive Exporters & Output Serialization Subsystem for scanDOC.
 from scandoc.exporters.asset_resolver import AssetResolver
 from scandoc.exporters.base import BaseExporter
 from scandoc.exporters.docx_exporter import DocxExporter
+from scandoc.exporters.epub_exporter import EpubExporter
 from scandoc.exporters.exceptions import (
     AssetResolutionError,
     ExporterError,
@@ -15,6 +16,8 @@ from scandoc.exporters.html_exporter import HtmlExporter
 from scandoc.exporters.json_exporter import JsonExporter
 from scandoc.exporters.markdown_exporter import MarkdownExporter
 from scandoc.exporters.models import ExportOptions, ExportResult
+from scandoc.exporters.pdfa_exporter import PdfaExporter
+from scandoc.exporters.rag_exporter import RagExporter, RagChunk, RagChunkMetadata
 from scandoc.exporters.registry import ExporterRegistry, default_exporter_registry
 from scandoc.exporters.taxonomy import ImageHandlingStrategy, OutputDestination
 from scandoc.exporters.text_exporter import TextExporter
@@ -26,6 +29,11 @@ __all__ = [
     "JsonExporter",
     "TextExporter",
     "DocxExporter",
+    "EpubExporter",
+    "PdfaExporter",
+    "RagExporter",
+    "RagChunk",
+    "RagChunkMetadata",
     "ExporterRegistry",
     "default_exporter_registry",
     "ExportOptions",

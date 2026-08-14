@@ -7,11 +7,14 @@ from typing import Dict, List, Optional
 
 from scandoc.exporters.base import BaseExporter
 from scandoc.exporters.docx_exporter import DocxExporter
+from scandoc.exporters.epub_exporter import EpubExporter
 from scandoc.exporters.exceptions import UnsupportedExporterFormatError
 from scandoc.exporters.html_exporter import HtmlExporter
 from scandoc.exporters.json_exporter import JsonExporter
 from scandoc.exporters.markdown_exporter import MarkdownExporter
 from scandoc.exporters.models import ExportOptions, ExportResult
+from scandoc.exporters.pdfa_exporter import PdfaExporter
+from scandoc.exporters.rag_exporter import RagExporter
 from scandoc.exporters.text_exporter import TextExporter
 from scandoc.models import DocumentIR
 
@@ -31,6 +34,12 @@ class ExporterRegistry:
             self.register(JsonExporter())
             self.register(TextExporter())
             self.register(DocxExporter())
+            self.register(EpubExporter())
+            self.register(PdfaExporter())
+
+            # Register RAG Vector Exporters
+            for fmt in ["rag_json", "langchain", "llamaindex", "chroma", "qdrant", "pinecone"]:
+                self.register(RagExporter(format_id=fmt))
 
     def register(self, exporter: BaseExporter) -> None:
         self._exporters[exporter.format_id.lower()] = exporter

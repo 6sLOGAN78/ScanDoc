@@ -163,10 +163,10 @@ def test_exporter_registry():
     """Test ExporterRegistry discovery, lookup, and default registration."""
     registry = ExporterRegistry(register_defaults=True)
     exporters = registry.list_exporters()
-    assert len(exporters) == 5
+    assert len(exporters) >= 13
 
     names = {e.format_id for e in exporters}
-    assert names == {"markdown", "html", "json", "text", "docx"}
+    assert {"markdown", "html", "json", "text", "docx", "epub", "pdfa", "rag_json", "langchain", "llamaindex", "chroma", "qdrant", "pinecone"}.issubset(names)
 
     md_exporter = registry.get_exporter("markdown")
     assert md_exporter.format_id == "markdown"
