@@ -18,8 +18,6 @@ func Render(st *state.AppState, selectedIdx int) string {
 		Tree  bool
 	}{
 		{"Routing Path (Processing Strategy)", strings.ToUpper(st.PipelineConfig.RoutingMode), false},
-		{"  ├─ Fast Path (Lightweight/OCR)", st.PipelineConfig.FastModel, true},
-		{"  └─ Deep Path (Heavy ML/Layout)", st.PipelineConfig.DeepModel, true},
 		{"Air-Gapped Offline Mode (SCANDOC_OFFLINE)", fmt.Sprintf("%v", st.IsOffline()), false},
 		{"Hardware Execution Device", strings.ToUpper(st.DeviceType), false},
 		{"Quantization & Precision Mode", strings.ToUpper(st.PrecisionMode), false},

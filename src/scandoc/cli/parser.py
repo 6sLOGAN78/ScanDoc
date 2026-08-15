@@ -37,7 +37,10 @@ def create_parser() -> argparse.ArgumentParser:
         "--device", default="auto", choices=["auto", "cpu", "cuda", "openvino", "tensorrt", "mps"], help="Hardware execution device"
     )
     convert_parser.add_argument("--provider", help="Inference provider override")
-    convert_parser.add_argument("--model", help="Model ID override")
+    convert_parser.add_argument("--ocr-model", help="OCR Model ID override")
+    convert_parser.add_argument("--layout-model", help="Layout Model ID override")
+    convert_parser.add_argument("--table-model", help="Table Model ID override")
+    convert_parser.add_argument("--formula-model", help="Formula Model ID override")
     convert_parser.add_argument("-w", "--workers", type=int, default=4, help="Pipeline worker concurrency threads (default: 4)")
     convert_parser.add_argument(
         "--on-error", default="continue-on-error", choices=["continue-on-error", "fail-fast"], help="Batch failure handling strategy"

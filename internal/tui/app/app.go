@@ -401,7 +401,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.SelectedIndex < 3 {
 					m.SelectedIndex++
 				}
-			case " ", "enter":
+			case " ":
 				switch m.SelectedIndex {
 				case 0:
 					m.State.PipelineConfig.EnableOCR = !m.State.PipelineConfig.EnableOCR
@@ -411,6 +411,41 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.State.PipelineConfig.EnableTable = !m.State.PipelineConfig.EnableTable
 				case 3:
 					m.State.PipelineConfig.EnableFormula = !m.State.PipelineConfig.EnableFormula
+				}
+			case "enter":
+				switch m.SelectedIndex {
+				case 0:
+					ocrModels := []string{"rapidocr_onnx", "easyocr", "tesseract", "onnxtr", "nemotron_ocr"}
+					for idx, p := range ocrModels {
+						if strings.EqualFold(p, m.State.PipelineConfig.OCRModel) {
+							m.State.PipelineConfig.OCRModel = ocrModels[(idx+1)%len(ocrModels)]
+							break
+						}
+					}
+				case 1:
+					layoutModels := []string{"rtdetr_doclaynet", "docling_heron"}
+					for idx, p := range layoutModels {
+						if strings.EqualFold(p, m.State.PipelineConfig.LayoutModel) {
+							m.State.PipelineConfig.LayoutModel = layoutModels[(idx+1)%len(layoutModels)]
+							break
+						}
+					}
+				case 2:
+					tableModels := []string{"slanet_table", "tableformerv2"}
+					for idx, p := range tableModels {
+						if strings.EqualFold(p, m.State.PipelineConfig.TableModel) {
+							m.State.PipelineConfig.TableModel = tableModels[(idx+1)%len(tableModels)]
+							break
+						}
+					}
+				case 3:
+					formulaModels := []string{"pix2text_formula", "codeformulav2"}
+					for idx, p := range formulaModels {
+						if strings.EqualFold(p, m.State.PipelineConfig.FormulaModel) {
+							m.State.PipelineConfig.FormulaModel = formulaModels[(idx+1)%len(formulaModels)]
+							break
+						}
+					}
 				}
 			case "r":
 				modes := []string{"adaptive", "fast", "deep"}
@@ -453,7 +488,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.SelectedIndex--
 				}
 			case "down", "s", "j":
-				if m.SelectedIndex < 7 { // 8 options total
+				if m.SelectedIndex < 5 { // 6 options total
 					m.SelectedIndex++
 				}
 			case " ", "enter":
@@ -467,45 +502,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 					}
 				case 1:
-					fastModels := []string{"RapidOCR Mobile PP-OCRv4", "EasyOCR", "Nemotron-OCR", "OnnxTR", "Tesseract"}
-					for idx, p := range fastModels {
-						if strings.EqualFold(p, m.State.PipelineConfig.FastModel) {
-							m.State.PipelineConfig.FastModel = fastModels[(idx+1)%len(fastModels)]
-							break
-						}
-					}
-					// check if downloaded
-					downloaded := false
-					for _, mod := range m.ModelList {
-						if strings.Contains(strings.ToLower(mod.ModelID), strings.ToLower(m.State.PipelineConfig.FastModel)) && mod.Installed {
-							downloaded = true
-							break
-						}
-					}
-					if !downloaded {
-						m.State.AddLog("Model not downloaded: " + m.State.PipelineConfig.FastModel + ". Go to Model Manager to download.")
-					}
-				case 2:
-					deepModels := []string{"RT-DETR DocLayNet", "Docling Heron"}
-					for idx, p := range deepModels {
-						if strings.EqualFold(p, m.State.PipelineConfig.DeepModel) {
-							m.State.PipelineConfig.DeepModel = deepModels[(idx+1)%len(deepModels)]
-							break
-						}
-					}
-					downloaded := false
-					for _, mod := range m.ModelList {
-						if strings.Contains(strings.ToLower(mod.ModelID), strings.ToLower(m.State.PipelineConfig.DeepModel)) && mod.Installed {
-							downloaded = true
-							break
-						}
-					}
-					if !downloaded {
-						m.State.AddLog("Model not downloaded: " + m.State.PipelineConfig.DeepModel + ". Go to Model Manager to download.")
-					}
-				case 3:
 					m.State.ToggleOfflineMode()
-				case 4:
+				case 2:
 					devs := []string{"cpu", "cuda", "openvino"}
 					for idx, d := range devs {
 						if strings.EqualFold(d, m.State.DeviceType) {
@@ -513,7 +511,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							break
 						}
 					}
-				case 5:
+				case 3:
 					precs := []string{"fp32", "fp16", "int8"}
 					for idx, p := range precs {
 						if strings.EqualFold(p, m.State.PrecisionMode) {
@@ -521,7 +519,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							break
 						}
 					}
-				case 6:
+				case 4:
 					home, _ := os.UserHomeDir()
 					backupDir := filepath.Join(home, ".scandoc")
 					os.MkdirAll(backupDir, 0755)
@@ -534,7 +532,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.State.AddLog("Failed to backup data: " + err.Error())
 						logger.LogAction("BACKUP_FAILED", err.Error())
 					}
-				case 7:
+				case 5:
 					home, _ := os.UserHomeDir()
 					backupDir := filepath.Join(home, ".scandoc")
 					cmd := exec.Command("cp", "-r", backupDir+"/.", filepath.Join(os.Getenv("HOME"), "local", "scandoc") + "/")

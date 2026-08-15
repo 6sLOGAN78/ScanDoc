@@ -19,10 +19,10 @@ func Render(st *state.AppState, selectedIdx int) string {
 		Enabled bool
 		Desc    string
 	}{
-		{"Optical Character Recognition (OCR Engine)", st.PipelineConfig.EnableOCR, "RapidOCR PP-OCRv4 ONNX"},
-		{"Visual Layout Analysis (Layout Detector)", st.PipelineConfig.EnableLayout, "RT-DETR DocLayNet ONNX"},
-		{"Neural Table Structure Recognition", st.PipelineConfig.EnableTable, "SLANet Table ONNX"},
-		{"Mathematical Formula LaTeX Parsing", st.PipelineConfig.EnableFormula, "Pix2Text LaTeX-OCR ONNX"},
+		{"Optical Character Recognition (OCR Engine)", st.PipelineConfig.EnableOCR, st.PipelineConfig.OCRModel},
+		{"Visual Layout Analysis (Layout Detector)", st.PipelineConfig.EnableLayout, st.PipelineConfig.LayoutModel},
+		{"Neural Table Structure Recognition", st.PipelineConfig.EnableTable, st.PipelineConfig.TableModel},
+		{"Mathematical Formula LaTeX Parsing", st.PipelineConfig.EnableFormula, st.PipelineConfig.FormulaModel},
 	}
 
 	for i, stage := range stages {
@@ -39,6 +39,6 @@ func Render(st *state.AppState, selectedIdx int) string {
 		}
 	}
 
-	b.WriteString("\n" + styles.FooterStyle.Render("Space: toggle stage | r: cycle routing mode (adaptive/fast/deep/fallback) | Esc: Home"))
+	b.WriteString("\n" + styles.FooterStyle.Render("Space: toggle stage | Enter: cycle model | r: cycle routing mode | Esc: Home"))
 	return styles.PanelStyle.Render(b.String())
 }

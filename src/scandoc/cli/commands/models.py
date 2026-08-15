@@ -83,6 +83,7 @@ def _cmd_status(args: Any, is_json: bool) -> int:
 
         status_list.append({
             "model_id": m.model_id,
+            "name": m.model_name,
             "task": m.task.value,
             "version": m.version,
             "installed": installed,

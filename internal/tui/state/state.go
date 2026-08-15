@@ -40,8 +40,10 @@ type PipelineConfig struct {
 	EnableTable       bool   `json:"enable_table"`
 	EnableFormula     bool   `json:"enable_formula"`
 	RoutingMode       string `json:"routing_mode"` // "adaptive", "fast", "deep"
-	FastModel         string `json:"fast_model"`
-	DeepModel         string `json:"deep_model"`
+	OCRModel          string `json:"ocr_model"`
+	LayoutModel       string `json:"layout_model"`
+	TableModel        string `json:"table_model"`
+	FormulaModel      string `json:"formula_model"`
 }
 
 type AppState struct {
@@ -113,8 +115,10 @@ func NewAppState() *AppState {
 			EnableTable:       true,
 			EnableFormula:     true,
 			RoutingMode:       "adaptive",
-			FastModel:         "RapidOCR Mobile PP-OCRv4",
-			DeepModel:         "RT-DETR DocLayNet",
+			OCRModel:          "rapidocr_onnx",
+			LayoutModel:       "rtdetr_doclaynet",
+			TableModel:        "slanet_table",
+			FormulaModel:      "pix2text_formula",
 		},
 		OfflineMode:     os.Getenv("SCANDOC_OFFLINE") == "1",
 		DeviceType:      "cpu",
