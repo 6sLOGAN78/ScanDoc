@@ -37,7 +37,12 @@ class DocumentPipeline:
         self.config = config or PipelineConfig()
         self.ingestor = ingestor or DocumentIngestor()
         self.agent = agent or DocumentAgent()
-        self.routing_engine = AdaptiveRoutingEngine()
+        self.routing_engine = AdaptiveRoutingEngine(
+            ocr_model=self.config.ocr_model,
+            layout_model=self.config.layout_model,
+            table_model=self.config.table_model,
+            formula_model=self.config.formula_model
+        )
         self.exporter_registry = exporter_registry or default_exporter_registry
 
     def process(

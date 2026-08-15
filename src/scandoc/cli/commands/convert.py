@@ -71,10 +71,14 @@ def run_convert(args: Any) -> int:
     }
     ext = ext_map.get(fmt_name, f".{fmt_name}")
 
-    # Build Pipeline Configuration
     pipeline_config = PipelineConfig(
         max_workers=getattr(args, "workers", 4),
         ordering_mode=OrderingMode.ORDERED,
+        routing_mode=getattr(args, "routing_mode", "adaptive"),
+        ocr_model=getattr(args, "ocr_model", None),
+        layout_model=getattr(args, "layout_model", None),
+        table_model=getattr(args, "table_model", None),
+        formula_model=getattr(args, "formula_model", None),
     )
     pipeline = DocumentPipeline(config=pipeline_config)
 

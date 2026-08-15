@@ -28,9 +28,17 @@ class AdaptiveRoutingEngine:
     Deep ML Layout & OCR Processing, or VLM Visual Fallback.
     """
 
-    def __init__(self, config: Optional[AgentConfig] = None):
+    def __init__(self, config: Optional[AgentConfig] = None, 
+                 ocr_model: Optional[str] = None,
+                 layout_model: Optional[str] = None,
+                 table_model: Optional[str] = None,
+                 formula_model: Optional[str] = None):
         self.config = config or AgentConfig()
         self.ingestor = DocumentIngestor()
+        self.ocr_model = ocr_model
+        self.layout_model = layout_model
+        self.table_model = table_model
+        self.formula_model = formula_model
         self._layout_provider: Optional[RtDetrLayoutProvider] = None
 
     def route_document(
@@ -153,8 +161,8 @@ class AdaptiveRoutingEngine:
                     DecisionTrace(
                         page_index=page.page_index,
                         decision="DEEP_ML_LAYOUT_AND_OCR",
-                        reason=f"Scanned/complex page (complexity: {comp}). Escalated to RT-DETR layout.",
-                        provider_id="rtdetr_layout",
+                        reason=f"Scanned/complex page (complexity: {comp}). Escalated to {self.layout_model or 'rtdetr_layout'} and {self.ocr_model or 'default'} OCR.",
+                        provider_id=self.layout_model or "rtdetr_layout",
                         mode="LOCAL",
                     )
                 )
