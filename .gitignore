@@ -7,7 +7,10 @@ __pycache__/
 htmlcov/
 *.egg-info/
 .eggs/
+
+# Go Build artifacts
 build/
+scandoc-tui
 dist/
 
 # Virtual environments
@@ -25,6 +28,11 @@ env/
 *.safetensors
 .onnx_cache/
 models_cache/
+
+# Local data, configurations, and outputs
+local/
+test_out/
+*.log
 
 # IDE and OS
 .DS_Store

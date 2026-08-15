@@ -24,7 +24,6 @@ func Render(st *state.AppState, selectedIdx int) string {
 		{"Neural Table Structure Recognition", st.PipelineConfig.EnableTable, "SLANet Table ONNX"},
 		{"Mathematical Formula LaTeX Parsing", st.PipelineConfig.EnableFormula, "Pix2Text LaTeX-OCR ONNX"},
 		{"Multimodal VLM Understanding", st.PipelineConfig.EnableVLM, "SmolVLM-250M-Instruct"},
-		{"VLM Fallback Routing", st.PipelineConfig.EnableVLMFallback, "Automatic VLM fallback on low confidence"},
 	}
 
 	for i, stage := range stages {

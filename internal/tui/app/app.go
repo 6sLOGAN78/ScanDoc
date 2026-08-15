@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -149,8 +150,28 @@ func (m *MainModel) getFlatSidebar() []SidebarItem {
 	return items
 }
 
+type tickMsg time.Time
+
+func tickCmd() tea.Cmd {
+	return tea.Tick(time.Millisecond*150, func(t time.Time) tea.Msg {
+		return tickMsg(t)
+	})
+}
+
 func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case string:
+		if msg == "process_done" {
+			return m, nil
+		}
+		
+	case tickMsg:
+		if m.State.ProcessingStatus == "processing" {
+			m.State.TickCount++
+			return m, tickCmd()
+		}
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
@@ -294,8 +315,16 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			case "enter":
 				if len(m.State.SelectedPaths) > 0 {
-					m.Controller.StartProcessing(context.Background(), m.State.SelectedPaths)
 					m.State.NavigateTo(state.ScreenProcessing)
+					paths := m.State.SelectedPaths
+					m.State.SelectedPaths = []string{}
+					return m, tea.Batch(
+						func() tea.Msg {
+							m.Controller.StartProcessing(context.Background(), paths)
+							return "process_done"
+						},
+						tickCmd(),
+					)
 				} else if len(m.FileItems) > 0 {
 					item := m.FileItems[m.SelectedIndex]
 					if item.IsDir {
@@ -303,9 +332,15 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.refreshFileItems()
 						m.SelectedIndex = 0
 					} else {
-						m.State.SelectedPaths = []string{item.Path}
-						m.Controller.StartProcessing(context.Background(), m.State.SelectedPaths)
 						m.State.NavigateTo(state.ScreenProcessing)
+						paths := []string{item.Path}
+						return m, tea.Batch(
+							func() tea.Msg {
+								m.Controller.StartProcessing(context.Background(), paths)
+								return "process_done"
+							},
+							tickCmd(),
+						)
 					}
 				}
 			case "b", "backspace":
@@ -363,7 +398,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.SelectedIndex--
 				}
 			case "down", "s", "j":
-				if m.SelectedIndex < 5 {
+				if m.SelectedIndex < 4 {
 					m.SelectedIndex++
 				}
 			case " ", "enter":
@@ -378,11 +413,9 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.State.PipelineConfig.EnableFormula = !m.State.PipelineConfig.EnableFormula
 				case 4:
 					m.State.PipelineConfig.EnableVLM = !m.State.PipelineConfig.EnableVLM
-				case 5:
-					m.State.PipelineConfig.EnableVLMFallback = !m.State.PipelineConfig.EnableVLMFallback
 				}
 			case "r":
-				modes := []string{"adaptive", "fast", "deep", "fallback"}
+				modes := []string{"adaptive", "fast", "deep"}
 				for idx, mode := range modes {
 					if mode == m.State.PipelineConfig.RoutingMode {
 						m.State.PipelineConfig.RoutingMode = modes[(idx+1)%len(modes)]
@@ -422,14 +455,59 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.SelectedIndex--
 				}
 			case "down", "s", "j":
-				if m.SelectedIndex < 5 {
+				if m.SelectedIndex < 7 { // 8 options total
 					m.SelectedIndex++
 				}
 			case " ", "enter":
 				switch m.SelectedIndex {
 				case 0:
-					m.State.ToggleOfflineMode()
+					modes := []string{"adaptive", "fast", "deep"}
+					for idx, mode := range modes {
+						if strings.EqualFold(mode, m.State.PipelineConfig.RoutingMode) {
+							m.State.PipelineConfig.RoutingMode = modes[(idx+1)%len(modes)]
+							break
+						}
+					}
 				case 1:
+					fastModels := []string{"RapidOCR Mobile PP-OCRv4", "EasyOCR", "Nemotron-OCR", "OnnxTR", "Tesseract"}
+					for idx, p := range fastModels {
+						if strings.EqualFold(p, m.State.PipelineConfig.FastModel) {
+							m.State.PipelineConfig.FastModel = fastModels[(idx+1)%len(fastModels)]
+							break
+						}
+					}
+					// check if downloaded
+					downloaded := false
+					for _, mod := range m.ModelList {
+						if strings.Contains(strings.ToLower(mod.ModelID), strings.ToLower(m.State.PipelineConfig.FastModel)) && mod.Installed {
+							downloaded = true
+							break
+						}
+					}
+					if !downloaded {
+						m.State.AddLog("Model not downloaded: " + m.State.PipelineConfig.FastModel + ". Go to Model Manager to download.")
+					}
+				case 2:
+					deepModels := []string{"RT-DETR DocLayNet", "Docling Heron"}
+					for idx, p := range deepModels {
+						if strings.EqualFold(p, m.State.PipelineConfig.DeepModel) {
+							m.State.PipelineConfig.DeepModel = deepModels[(idx+1)%len(deepModels)]
+							break
+						}
+					}
+					downloaded := false
+					for _, mod := range m.ModelList {
+						if strings.Contains(strings.ToLower(mod.ModelID), strings.ToLower(m.State.PipelineConfig.DeepModel)) && mod.Installed {
+							downloaded = true
+							break
+						}
+					}
+					if !downloaded {
+						m.State.AddLog("Model not downloaded: " + m.State.PipelineConfig.DeepModel + ". Go to Model Manager to download.")
+					}
+				case 3:
+					m.State.ToggleOfflineMode()
+				case 4:
 					devs := []string{"cpu", "cuda", "openvino"}
 					for idx, d := range devs {
 						if strings.EqualFold(d, m.State.DeviceType) {
@@ -437,7 +515,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							break
 						}
 					}
-				case 2:
+				case 5:
 					precs := []string{"fp32", "fp16", "int8"}
 					for idx, p := range precs {
 						if strings.EqualFold(p, m.State.PrecisionMode) {
@@ -445,11 +523,11 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							break
 						}
 					}
-				case 4:
+				case 6:
 					home, _ := os.UserHomeDir()
 					backupDir := filepath.Join(home, ".scandoc")
 					os.MkdirAll(backupDir, 0755)
-					cmd := exec.Command("cp", "-r", "./local/scandoc/.", backupDir)
+					cmd := exec.Command("cp", "-r", filepath.Join(os.Getenv("HOME"), "local", "scandoc") + "/.", backupDir)
 					err := cmd.Run()
 					if err == nil {
 						m.State.AddLog("Successfully backed up local data to " + backupDir)
@@ -458,10 +536,10 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.State.AddLog("Failed to backup data: " + err.Error())
 						logger.LogAction("BACKUP_FAILED", err.Error())
 					}
-				case 5:
+				case 7:
 					home, _ := os.UserHomeDir()
 					backupDir := filepath.Join(home, ".scandoc")
-					cmd := exec.Command("cp", "-r", backupDir+"/.", "./local/scandoc/")
+					cmd := exec.Command("cp", "-r", backupDir+"/.", filepath.Join(os.Getenv("HOME"), "local", "scandoc") + "/")
 					err := cmd.Run()
 					if err == nil {
 						m.State.AddLog("Successfully restored local data from " + backupDir)

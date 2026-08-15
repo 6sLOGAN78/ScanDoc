@@ -1,12 +1,34 @@
 package document
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"scandoc/internal/tui/state"
 	"scandoc/internal/tui/styles"
 )
+
+type Block struct {
+	ID        string `json:"id"`
+	BlockType string `json:"block_type"`
+	Text      string `json:"text"`
+	BBox      struct {
+		Left float64 `json:"left"`
+		Top  float64 `json:"top"`
+	} `json:"bbox"`
+}
+
+type Page struct {
+	PageIndex int     `json:"page_index"`
+	Blocks    []Block `json:"blocks"`
+}
+
+type ScandocOutput struct {
+	Pages []Page `json:"pages"`
+}
 
 func Render(st *state.AppState, selectedIdx int) string {
 	var b strings.Builder
@@ -23,33 +45,45 @@ func Render(st *state.AppState, selectedIdx int) string {
 		docName = "document"
 	}
 
-	// Breadcrumb header
 	b.WriteString(styles.TitleStyle.Render(fmt.Sprintf("%s / Page %d", docName, st.CurrentPage)) + "\n\n")
-
-	// Tabs mock
 	b.WriteString(styles.PrimaryStyle.Render("  Content") + "   " + 
 				  styles.MutedStyle.Render("Layout   JSON   Relations") + "\n\n")
 
-	sampleBlocks := []struct {
-		ID   string
-		Type string
-		Text string
-		BBox string
-	}{
-		{"blk_01", "Heading", "Executive Overview & Summary", "0.08, 0.06"},
-		{"blk_02", "Paragraph", "This document contains processed invoice metrics.", "0.08, 0.12"},
-		{"blk_03", "Table", "Table 1: Quarterly Revenue Breakdown", "0.08, 0.28"},
-		{"blk_04", "Formula", "$$E = mc^2$$", "0.08, 0.58"},
+	// Load JSON output
+	basename := filepath.Base(st.ActiveDocumentPath)
+	ext := filepath.Ext(basename)
+	jsonName := strings.TrimSuffix(basename, ext) + ".json"
+	outDir := filepath.Join(".", "local", "scandoc", "output", basename)
+	jsonPath := filepath.Join(outDir, jsonName)
+
+	var output ScandocOutput
+	var currentBlocks []Block
+
+	data, err := os.ReadFile(jsonPath)
+	if err == nil {
+		if err := json.Unmarshal(data, &output); err == nil {
+			for _, page := range output.Pages {
+				if page.PageIndex == st.CurrentPage-1 {
+					currentBlocks = page.Blocks
+					break
+				}
+			}
+		}
 	}
 
-	for i, block := range sampleBlocks {
-		if i == selectedIdx {
-			b.WriteString(styles.SelectedItemStyle.Render(fmt.Sprintf("> %s", block.Type)) + "\n")
-			b.WriteString(styles.PrimaryStyle.Render(fmt.Sprintf("  %s", block.Text)) + "\n")
-			b.WriteString(styles.MutedStyle.Render(fmt.Sprintf("  ID: %s   Pos: [%s]", block.ID, block.BBox)) + "\n\n")
-		} else {
-			b.WriteString(styles.SecondaryStyle.Render(fmt.Sprintf("  %s", block.Type)) + "\n")
-			b.WriteString(styles.MutedStyle.Render(fmt.Sprintf("  %s", block.Text)) + "\n\n")
+	if len(currentBlocks) == 0 {
+		b.WriteString(styles.MutedStyle.Render("  No extracted content for this page.") + "\n\n")
+	} else {
+		for i, block := range currentBlocks {
+			bboxStr := fmt.Sprintf("%.2f, %.2f", block.BBox.Left, block.BBox.Top)
+			if i == selectedIdx {
+				b.WriteString(styles.SelectedItemStyle.Render(fmt.Sprintf("> %s", block.BlockType)) + "\n")
+				b.WriteString(styles.PrimaryStyle.Render(fmt.Sprintf("  %s", block.Text)) + "\n")
+				b.WriteString(styles.MutedStyle.Render(fmt.Sprintf("  ID: %s   Pos: [%s]", block.ID, bboxStr)) + "\n\n")
+			} else {
+				b.WriteString(styles.SecondaryStyle.Render(fmt.Sprintf("  %s", block.BlockType)) + "\n")
+				b.WriteString(styles.MutedStyle.Render(fmt.Sprintf("  %s", block.Text)) + "\n\n")
+			}
 		}
 	}
 

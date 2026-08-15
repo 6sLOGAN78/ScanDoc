@@ -10,8 +10,10 @@ from scandoc.analysis.spatial_graph import SpatialGraph, SpatialNode
 from scandoc.analysis.taxonomy import SemanticCategory, SpatialRelationType
 from scandoc.analysis.tree import DocumentSection, DocumentStructureTree
 from scandoc.models import DocumentIR, Page
+from scandoc.models.blocks import HeadingBlock, ListBlock, CaptionBlock
 from scandoc.models.geometry import BoundingBox
 from scandoc.structure.xy_cut_engine import XYCutReadingOrderEngine
+import re
 
 logger = logging.getLogger("scandoc.analysis.layout_analyzer")
 
@@ -63,7 +65,53 @@ class LayoutAnalyzer:
             categories[b_id] = (cat, conf)
 
         # 3. Multi-Column Reading Order Determination via XY-Cut Engine
-        ordered_blocks = cls._compute_reading_order(blocks, page_width=page_width, page_height=page_height)
+        ordered_blocks_raw = cls._compute_reading_order(blocks, page_width=page_width, page_height=page_height)
+        
+        # 3.5 Mutate text blocks into HeadingBlock / ParagraphBlock based on semantics
+        ordered_blocks = []
+        for b in ordered_blocks_raw:
+            b_id = getattr(b, "id", "b_unknown")
+            cat, _ = categories.get(b_id, (SemanticCategory.UNKNOWN, 0.0))
+            
+            if type(b).__name__.lower() == "textblock":
+                text = getattr(b, "text", "")
+                
+                if cat == SemanticCategory.HEADING:
+                    level = 1
+                    if re.match(r"^(\d+\.\d+\.\d+)", text):
+                        level = 3
+                    elif re.match(r"^(\d+\.\d+)", text):
+                        level = 2
+                    elif text.istitle() and len(text) > 3:
+                        level = 2
+                    elif text.isupper() and len(text) > 3:
+                        level = 2
+                    if re.match(r"^(Abstract|References|Conclusion|Introduction)", text, re.IGNORECASE):
+                        level = 1
+                        
+                    hb = HeadingBlock(
+                        id=b.id,
+                        bbox=b.bbox,
+                        polygon=b.polygon,
+                        reading_order_index=b.reading_order_index,
+                        provenance=b.provenance,
+                        text=text,
+                        level=level
+                    )
+                    ordered_blocks.append(hb)
+                else:
+                    from scandoc.models.blocks import ParagraphBlock
+                    pb = ParagraphBlock(
+                        id=b.id,
+                        bbox=b.bbox,
+                        polygon=b.polygon,
+                        reading_order_index=b.reading_order_index,
+                        provenance=b.provenance,
+                        text=text
+                    )
+                    ordered_blocks.append(pb)
+            else:
+                ordered_blocks.append(b)
 
         # 4. Caption Association (Linking Figure 1: ... captions to figures)
         cls._associate_captions(ordered_blocks, graph, categories)

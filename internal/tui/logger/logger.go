@@ -14,7 +14,7 @@ var (
 )
 
 func Init() error {
-	logDir := "./local/scandoc/logs"
+	logDir := filepath.Join(os.Getenv("HOME"), "local", "scandoc", "logs")
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return err
 	}

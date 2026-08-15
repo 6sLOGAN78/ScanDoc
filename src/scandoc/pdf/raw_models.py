@@ -43,6 +43,7 @@ class RawPdfImage(BaseModel):
     width_px: int = Field(..., ge=1, description="Pixel width of raster asset")
     height_px: int = Field(..., ge=1, description="Pixel height of raster asset")
     mime_type: Optional[str] = Field(None, description="MIME type if identifiable")
+    payload: Optional[bytes] = Field(None, description="Binary image data")
 
 
 class RawPdfLink(BaseModel):

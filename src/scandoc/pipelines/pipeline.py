@@ -65,7 +65,8 @@ class DocumentPipeline:
 
                 # Layout & Structure Analysis Stage
                 for page in doc_ir.pages:
-                    LayoutAnalyzer.analyze_page(page, page_width=page.width, page_height=page.height)
+                    layout_res = LayoutAnalyzer.analyze_page(page, page_width=page.width, page_height=page.height)
+                    page.blocks = layout_res.ordered_blocks
 
             # 4. Optional Exporter Stage
             exported_content = None

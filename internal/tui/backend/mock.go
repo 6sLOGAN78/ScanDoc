@@ -20,7 +20,7 @@ func syncToGlobal() {
 	if err == nil {
 		globalDir := filepath.Join(home, ".scandoc")
 		os.MkdirAll(globalDir, 0755)
-		cmd := exec.Command("cp", "-r", "./local/scandoc/.", globalDir)
+		cmd := exec.Command("cp", "-r", filepath.Join(os.Getenv("HOME"), "local", "scandoc") + "/.", globalDir)
 		cmd.Run()
 	}
 }
@@ -36,67 +36,57 @@ func (s *MockDocumentService) Inspect(ctx context.Context, path string) (*Docume
 
 func (s *MockDocumentService) Process(ctx context.Context, path string, config state.PipelineConfig) error {
 	startTime := time.Now()
-	time.Sleep(100 * time.Millisecond) // Simulate processing time
 
-	outDir := filepath.Join("./local/scandoc/output", filepath.Base(path))
+	outDir := filepath.Join(filepath.Join(os.Getenv("HOME"), "local", "scandoc", "output"), filepath.Base(path))
 	os.MkdirAll(outDir, 0755)
 
-	// Create an images folder inside the output
+	// Build the command
+	// We'll use the python module directly assuming it's available in the environment
+	args := []string{"-m", "scandoc.cli.main", "convert", path, "--output-dir", outDir, "-f", "json"}
+	
+	if config.RoutingMode != "" {
+		args = append(args, "--routing-mode", config.RoutingMode)
+	}
+
+	cmd := exec.CommandContext(ctx, "python3", args...)
+	
+	// If src exists in current directory, add it to PYTHONPATH
+	// This helps when running from the repo root.
+	if _, err := os.Stat("src"); err == nil {
+		cmd.Env = append(os.Environ(), "PYTHONPATH=src")
+	} else {
+		cmd.Env = os.Environ()
+	}
+
+	output, err := cmd.CombinedOutput()
+	
+	// Create images dir just in case
 	imagesDir := filepath.Join(outDir, "images")
 	os.MkdirAll(imagesDir, 0755)
-	
-	// Dummy image
-	os.WriteFile(filepath.Join(imagesDir, "page1_extracted_img1.png"), []byte("dummy image data"), 0644)
 
-	// Copy the original file or folder using shell command for simplicity
-	cmd := exec.Command("cp", "-r", path, outDir+"/")
-	cmd.Run()
-
-	// Extract some actual text to make chunks look real if it's a file
-	var extractedText string
-	info, err := os.Stat(path)
-	if err == nil && !info.IsDir() {
-		data, err := os.ReadFile(path)
-		if err == nil {
-			extractedText = string(data)
-			if len(extractedText) > 200 {
-				extractedText = extractedText[:200] + "..."
-			}
-			extractedText = strings.ReplaceAll(extractedText, "\n", " ")
-			extractedText = strings.ReplaceAll(extractedText, "\"", "\\\"")
-		}
-	}
-	if extractedText == "" {
-		extractedText = "Sample extracted document text segment."
-	}
-
-	// Output chunks
-	chunksData := fmt.Sprintf(`{"chunks": [{"id": 1, "text": "%s", "has_image": true}, {"id": 2, "text": "Additional context chunk"}]}`, extractedText)
-	os.WriteFile(filepath.Join(outDir, "chunks.json"), []byte(chunksData), 0644)
-
-	// Generate process.log
+	// Write log content
 	logContent := fmt.Sprintf("=== scanDOC Processing Log ===\n")
 	logContent += fmt.Sprintf("Date: %s\n", time.Now().Format(time.RFC1123))
 	logContent += fmt.Sprintf("Target: %s\n\n", path)
+	logContent += fmt.Sprintf("Command: python3 %s\n\n", strings.Join(args, " "))
+	logContent += "--- CLI Output ---\n"
+	logContent += string(output) + "\n\n"
 	
-	logContent += "--- Models Used ---\n"
-	if config.EnableOCR { logContent += "- OCR Model: rapidocr_onnx\n" }
-	if config.EnableLayout { logContent += "- Layout Analyzer: rtdetr_doclaynet\n" }
-	if config.EnableTable { logContent += "- Table Recognizer: slanet_table\n" }
-	if config.EnableFormula { logContent += "- Formula Extractor: pix2text_formula\n" }
-	if config.EnableVLM { logContent += "- VLM: smolvlm_local\n" }
-	logContent += fmt.Sprintf("Routing Mode: %s\n\n", config.RoutingMode)
-
-	logContent += "--- Execution Stats ---\n"
-	logContent += "Total Chunks Found: 2\n"
-	logContent += "Total Chunks Stored: 2\n"
-	logContent += "Images Extracted: 1\n"
-	elapsed := time.Since(startTime)
-	logContent += fmt.Sprintf("Total Processing Time: %v\n", elapsed)
-	if config.EnableOCR { logContent += "  > OCR Processing Time: 45ms\n" }
-	if config.EnableLayout { logContent += "  > Layout Analysis Time: 32ms\n" }
+	if err != nil {
+		logContent += fmt.Sprintf("Error: %v\n", err)
+	} else {
+		logContent += "--- Execution Stats ---\n"
+		elapsed := time.Since(startTime)
+		logContent += fmt.Sprintf("Total Processing Time: %v\n", elapsed)
+	}
 	
 	os.WriteFile(filepath.Join(outDir, "process.log"), []byte(logContent), 0644)
+
+	if err != nil {
+		logger.LogAction("DOCUMENT_PROCESS_ERROR", fmt.Sprintf("Failed processing %s: %v", path, err))
+		syncToGlobal()
+		return fmt.Errorf("conversion failed: %v", err)
+	}
 
 	logger.LogAction("DOCUMENT_PROCESS", "Processed and exported to: "+outDir)
 	syncToGlobal()
@@ -105,6 +95,25 @@ func (s *MockDocumentService) Process(ctx context.Context, path string, config s
 
 func (s *MockDocumentService) Export(ctx context.Context, path string, format string, outputDir string) (string, error) {
 	out := filepath.Join(outputDir, fmt.Sprintf("%s.%s", filepath.Base(path), format))
+	os.MkdirAll(outputDir, 0755)
+
+	args := []string{"-m", "scandoc.cli.main", "convert", path, "--output-dir", outputDir, "-f", format}
+	
+	cmd := exec.CommandContext(ctx, "python3", args...)
+	if _, err := os.Stat("src"); err == nil {
+		cmd.Env = append(os.Environ(), "PYTHONPATH=src")
+	} else {
+		cmd.Env = os.Environ()
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		logger.LogAction("DOCUMENT_EXPORT_ERROR", fmt.Sprintf("Failed exporting %s to %s: %v\nOutput: %s", path, format, err, string(output)))
+		return out, fmt.Errorf("export failed: %v", err)
+	}
+	
+	logger.LogAction("DOCUMENT_EXPORT", fmt.Sprintf("Exported %s to %s format at %s", path, format, out))
+	syncToGlobal()
 	return out, nil
 }
 
@@ -113,7 +122,7 @@ type MockModelService struct {
 }
 
 func NewMockModelService() *MockModelService {
-	dir := "./local/scandoc/models"
+	dir := filepath.Join(os.Getenv("HOME"), "local", "scandoc", "models")
 	_ = os.MkdirAll(dir, 0755)
 	
 	// Create dummy files for default installed models if they don't exist yet

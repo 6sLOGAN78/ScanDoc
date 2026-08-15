@@ -61,6 +61,25 @@ class SemanticClassifier:
         if clean_text.startswith("#"):
             return SemanticCategory.HEADING, 0.92
 
+        # 2.5 Heuristic Heading Detection (Docling/RAGFlow style fallback)
+        if len(clean_text) < 120 and "\n" not in clean_text:
+            # Common explicit academic/report headings
+            if re.match(r"^(Abstract|References|Conclusion|Introduction|Methodology|Discussion|Results|Acknowledgments?|Appendix)$", clean_text, re.IGNORECASE):
+                return SemanticCategory.HEADING, 0.90
+                
+            # Numbered headings (e.g., "1 Introduction", "2.1 Background", "I. Introduction", "A. Context")
+            if re.match(r"^(\d+(\.\d+)*\s+[A-Z]|(?:[IVX]+|[A-Z])\.\s+[A-Z])", clean_text):
+                return SemanticCategory.HEADING, 0.85
+                
+            # Title Case short phrases without trailing punctuation
+            if clean_text.istitle() and not clean_text.endswith((".", ",", ";", ":")):
+                if len(clean_text) > 3 and len(clean_text.split()) <= 8:
+                    return SemanticCategory.HEADING, 0.70
+            
+            # ALL CAPS short phrases
+            if clean_text.isupper() and len(clean_text) > 3 and len(clean_text.split()) <= 8:
+                return SemanticCategory.HEADING, 0.75
+
         # 3. List Detection by Bullets or Numbering
         if re.match(r"^([\*\-\+]|\d+[\.\)])\s+", clean_text):
             return SemanticCategory.LIST, 0.90

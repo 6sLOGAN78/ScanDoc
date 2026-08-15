@@ -42,14 +42,48 @@ func Render(st *state.AppState) string {
 		b.WriteString(styles.NormalItemStyle.Render(fmt.Sprintf("Page %d / %d", st.CurrentPage, st.TotalPages)) + "\n")
 	}
 
-	barLen := 30
-	filled := int(float64(barLen) * st.ProgressPct / 100.0)
-	if filled > barLen {
-		filled = barLen
+	barLen := 40
+	var bar string
+	if st.ProcessingStatus == "completed" {
+		bar = strings.Repeat("█", barLen)
+		b.WriteString(styles.PrimaryStyle.Render(fmt.Sprintf("%s  100%%", bar)) + "\n\n")
+	} else if st.ProcessingStatus == "failed" {
+		bar = strings.Repeat("✕", barLen)
+		b.WriteString(styles.BadgeError.Render(fmt.Sprintf("%s  FAILED", bar)) + "\n\n")
+	} else {
+		spinnerFrames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+		spinner := spinnerFrames[st.TickCount%len(spinnerFrames)]
+
+		if st.ProgressPct > 0.0 {
+			// Determinate progress bar
+			filledLen := int((st.ProgressPct / 100.0) * float64(barLen))
+			if filledLen < 0 {
+				filledLen = 0
+			}
+			if filledLen > barLen {
+				filledLen = barLen
+			}
+			emptyLen := barLen - filledLen
+
+			bar = strings.Repeat("█", filledLen) + strings.Repeat("░", emptyLen)
+			b.WriteString(styles.PrimaryStyle.Render(fmt.Sprintf("%s %s  %.1f%%", spinner, bar, st.ProgressPct)) + "\n\n")
+		} else {
+			// Indeterminate bouncing loading bar based on TickCount
+			pos := st.TickCount % (barLen * 2)
+			if pos >= barLen {
+				pos = (barLen * 2) - 1 - pos
+			}
+			
+			left := strings.Repeat("░", pos)
+			right := strings.Repeat("░", barLen-pos-1)
+			if pos == barLen-1 {
+				right = ""
+			}
+			bar = left + "█" + right
+			
+			b.WriteString(styles.PrimaryStyle.Render(fmt.Sprintf("%s %s  Loading...", spinner, bar)) + "\n\n")
+		}
 	}
-	bar := strings.Repeat("█", filled) + strings.Repeat("░", barLen-filled)
-	
-	b.WriteString(styles.PrimaryStyle.Render(fmt.Sprintf("%s  %d%%", bar, int(st.ProgressPct))) + "\n\n")
 
 	// Pipeline visualization
 	b.WriteString(styles.SectionStyle.Render("Pipeline") + "\n\n")

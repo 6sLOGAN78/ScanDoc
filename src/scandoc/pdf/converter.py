@@ -176,10 +176,16 @@ class NativePdfExtractor:
                         page_index,
                     )
                     
+                    import base64
+                    b64_data = None
+                    if getattr(raw_img, "payload", None):
+                        b64_data = base64.b64encode(raw_img.payload).decode("ascii")
+
                     img_ref = ImageRef(
                         mime_type=raw_img.mime_type or "image/png",
                         width_px=raw_img.width_px,
                         height_px=raw_img.height_px,
+                        base64_data=b64_data,
                     )
                     
                     fig_block = FigureBlock(

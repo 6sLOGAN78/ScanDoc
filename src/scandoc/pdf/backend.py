@@ -224,7 +224,40 @@ class PyPdfium2Backend(BasePdfBackend):
             )
             seq_idx += 1
 
-        return blocks
+        if not blocks:
+            return []
+            
+        merged_blocks = [blocks[0]]
+        for curr in blocks[1:]:
+            prev = merged_blocks[-1]
+            vertical_gap = prev.bbox_pdf[1] - curr.bbox_pdf[3]
+            horizontal_diff = abs(prev.bbox_pdf[0] - curr.bbox_pdf[0])
+            
+            import re
+            prev_is_heading = False
+            if len(prev.text) < 100 and "\n" not in prev.text:
+                if re.match(r"^(\d+(\.\d+)*\s+[A-Z]|(?:[IVX]+|[A-Z])\.\s+[A-Z])", prev.text) or \
+                   re.match(r"^(Abstract|References|Conclusion|Introduction|Methodology|Discussion|Results|Acknowledgments?|Appendix)$", prev.text, re.IGNORECASE) or \
+                   (prev.text.isupper() and len(prev.text) > 3 and len(prev.text.split()) <= 6):
+                    prev_is_heading = True
+            
+            if -10 <= vertical_gap <= 25 and horizontal_diff <= 30 and not prev_is_heading:
+                merged_text = prev.text + " " + curr.text
+                new_left = min(prev.bbox_pdf[0], curr.bbox_pdf[0])
+                new_bottom = min(prev.bbox_pdf[1], curr.bbox_pdf[1])
+                new_right = max(prev.bbox_pdf[2], curr.bbox_pdf[2])
+                new_top = max(prev.bbox_pdf[3], curr.bbox_pdf[3])
+                
+                merged_blocks[-1] = RawPdfTextBlock(
+                    text=merged_text,
+                    bbox_pdf=(new_left, new_bottom, new_right, new_top),
+                    spans=prev.spans + curr.spans,
+                    reading_sequence_idx=prev.reading_sequence_idx,
+                )
+            else:
+                merged_blocks.append(curr)
+
+        return merged_blocks
 
     def _extract_images(
         self, page: pdfium.PdfPage, width: float, height: float
@@ -251,6 +284,18 @@ class PyPdfium2Backend(BasePdfBackend):
                         height_px = int(meta.height)
                 except Exception:
                     pass
+                    
+                import io
+                payload = None
+                try:
+                    bitmap = obj.get_bitmap()
+                    if bitmap is not None:
+                        pil_img = bitmap.to_pil()
+                        buf = io.BytesIO()
+                        pil_img.save(buf, format="PNG")
+                        payload = buf.getvalue()
+                except Exception:
+                    pass
 
                 images.append(
                     RawPdfImage(
@@ -259,6 +304,7 @@ class PyPdfium2Backend(BasePdfBackend):
                         width_px=max(1, width_px),
                         height_px=max(1, height_px),
                         mime_type="image/png",
+                        payload=payload,
                     )
                 )
                 img_idx += 1

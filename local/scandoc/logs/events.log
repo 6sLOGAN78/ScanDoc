@@ -309,3 +309,4 @@
 2026/08/15 03:08:23 [KEYPRESS] Key: 'esc' | Screen: pipeline_config
 2026/08/15 03:08:23 [KEYPRESS] Key: 'q' | Screen: pipeline_config
 2026/08/15 03:08:23 [ACTION] APP_EXIT - scanDOC TUI exited cleanly
+2026/08/15 04:41:31 [ACTION] APP_START - scanDOC TUI started

@@ -13,8 +13,8 @@ from scandoc.models_mgmt.taxonomy import ModelState, TaskType
 
 logger = logging.getLogger("scandoc.models_mgmt.store")
 
-DEFAULT_MODEL_DIR = Path.home() / ".scandoc" / "models"
-
+import os
+DEFAULT_MODEL_DIR = Path(os.environ.get("SCANDOC_MODELS_DIR", Path.home() / "local" / "scandoc" / "models"))
 
 class ModelStore:
     """
