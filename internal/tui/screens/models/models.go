@@ -35,7 +35,7 @@ func Render(st *state.AppState, modelList []backend.ModelInfo, downloading map[s
 			}
 
 			sizeMB := float64(m.SizeBytes) / (1024 * 1024)
-			line := fmt.Sprintf("[%s] %-20s | %-38s | %5.1f MB", statusTag, m.ModelID, m.Name, sizeMB)
+			line := fmt.Sprintf("[%s] %-20s | %-8s | %-32s | %5.1f MB", statusTag, m.ModelID, m.Task, m.Name, sizeMB)
 
 			if i == selectedIdx {
 				b.WriteString(styles.ActiveItemStyle.Render("› "+line) + "\n")

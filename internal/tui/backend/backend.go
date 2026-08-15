@@ -16,6 +16,7 @@ type DocumentInfo struct {
 type ModelInfo struct {
 	ModelID   string `json:"model_id"`
 	Name      string `json:"name"`
+	Task      string `json:"task"`
 	Installed bool   `json:"installed"`
 	SizeBytes int64  `json:"size_bytes"`
 }

@@ -202,6 +202,7 @@ func (s *MockModelService) ListModels(ctx context.Context) ([]ModelInfo, error) 
 		results = append(results, ModelInfo{
 			ModelID:   st.ModelID,
 			Name:      st.Name,
+			Task:      strings.ToUpper(st.Task),
 			Installed: st.Installed,
 			SizeBytes: int64(st.SizeMB * 1024 * 1024),
 		})

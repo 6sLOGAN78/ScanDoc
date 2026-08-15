@@ -75,9 +75,19 @@ class ModelManager:
         return self._store.list_installed_models()
 
     def is_installed(self, model_id: str) -> bool:
-        """Return True if model is installed locally."""
+        """Return True if model is installed locally and has valid files."""
         spec = self._store.get_model_spec(model_id)
-        return spec is not None and spec.local_path is not None
+        if not spec or not spec.local_path:
+            return False
+            
+        from pathlib import Path
+        p = Path(spec.local_path)
+        if not p.exists() or not p.is_dir():
+            return False
+            
+        # Ensure it has some substantial size (not just an empty folder)
+        size = self._store.calculate_size(p)
+        return size > 1024  # Must be at least 1KB
 
     def get_model_path(self, model_id: str) -> Optional[str]:
         """Return local filesystem path of installed model if present."""
