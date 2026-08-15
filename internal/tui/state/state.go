@@ -39,7 +39,6 @@ type PipelineConfig struct {
 	EnableLayout      bool   `json:"enable_layout"`
 	EnableTable       bool   `json:"enable_table"`
 	EnableFormula     bool   `json:"enable_formula"`
-	EnableVLM         bool   `json:"enable_vlm"`
 	RoutingMode       string `json:"routing_mode"` // "adaptive", "fast", "deep"
 	FastModel         string `json:"fast_model"`
 	DeepModel         string `json:"deep_model"`
@@ -113,7 +112,6 @@ func NewAppState() *AppState {
 			EnableLayout:      true,
 			EnableTable:       true,
 			EnableFormula:     true,
-			EnableVLM:         true,
 			RoutingMode:       "adaptive",
 			FastModel:         "RapidOCR Mobile PP-OCRv4",
 			DeepModel:         "RT-DETR DocLayNet",

@@ -23,7 +23,6 @@ func Render(st *state.AppState, selectedIdx int) string {
 		{"Visual Layout Analysis (Layout Detector)", st.PipelineConfig.EnableLayout, "RT-DETR DocLayNet ONNX"},
 		{"Neural Table Structure Recognition", st.PipelineConfig.EnableTable, "SLANet Table ONNX"},
 		{"Mathematical Formula LaTeX Parsing", st.PipelineConfig.EnableFormula, "Pix2Text LaTeX-OCR ONNX"},
-		{"Multimodal VLM Understanding", st.PipelineConfig.EnableVLM, "SmolVLM-250M-Instruct"},
 	}
 
 	for i, stage := range stages {

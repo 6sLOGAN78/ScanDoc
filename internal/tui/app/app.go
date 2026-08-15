@@ -398,7 +398,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.SelectedIndex--
 				}
 			case "down", "s", "j":
-				if m.SelectedIndex < 4 {
+				if m.SelectedIndex < 3 {
 					m.SelectedIndex++
 				}
 			case " ", "enter":
@@ -411,8 +411,6 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.State.PipelineConfig.EnableTable = !m.State.PipelineConfig.EnableTable
 				case 3:
 					m.State.PipelineConfig.EnableFormula = !m.State.PipelineConfig.EnableFormula
-				case 4:
-					m.State.PipelineConfig.EnableVLM = !m.State.PipelineConfig.EnableVLM
 				}
 			case "r":
 				modes := []string{"adaptive", "fast", "deep"}

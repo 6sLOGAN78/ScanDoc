@@ -153,11 +153,24 @@ func (s *MockModelService) isInstalled(modelID string) bool {
 
 func (s *MockModelService) ListModels(ctx context.Context) ([]ModelInfo, error) {
 	return []ModelInfo{
-		{ModelID: "rapidocr_onnx", Name: "RapidOCR PP-OCRv4 ONNX", Installed: s.isInstalled("rapidocr_onnx"), SizeBytes: 10857312},
-		{ModelID: "rtdetr_doclaynet", Name: "RT-DETR DocLayNet Layout Analyzer", Installed: s.isInstalled("rtdetr_doclaynet"), SizeBytes: 44281920},
+		// OCR Models
+		{ModelID: "rapidocr_onnx", Name: "RapidOCR PP-OCRv4 (Fast)", Installed: s.isInstalled("rapidocr_onnx"), SizeBytes: 10857312},
+		{ModelID: "easyocr", Name: "EasyOCR (Accurate)", Installed: s.isInstalled("easyocr"), SizeBytes: 85000000},
+		{ModelID: "tesseract", Name: "Tesseract OCR (Legacy)", Installed: s.isInstalled("tesseract"), SizeBytes: 30000000},
+		{ModelID: "onnxtr", Name: "OnnxTR (Transformer OCR)", Installed: s.isInstalled("onnxtr"), SizeBytes: 210000000},
+		{ModelID: "nemotron_ocr", Name: "NVIDIA Nemotron-OCR (Heavy)", Installed: s.isInstalled("nemotron_ocr"), SizeBytes: 4500000000},
+		
+		// Layout Models
+		{ModelID: "rtdetr_doclaynet", Name: "RT-DETR DocLayNet (Fast)", Installed: s.isInstalled("rtdetr_doclaynet"), SizeBytes: 44281920},
+		{ModelID: "docling_heron", Name: "Docling Heron Layout (Heavy)", Installed: s.isInstalled("docling_heron"), SizeBytes: 1200000000},
+		
+		// Table Models
 		{ModelID: "slanet_table", Name: "SLANet Table Recognizer", Installed: s.isInstalled("slanet_table"), SizeBytes: 18492000},
-		{ModelID: "pix2text_formula", Name: "Pix2Text LaTeX-OCR Vision Model", Installed: s.isInstalled("pix2text_formula"), SizeBytes: 18920112},
-		{ModelID: "smolvlm_local", Name: "SmolVLM Multimodal Model", Installed: s.isInstalled("smolvlm_local"), SizeBytes: 512000000},
+		{ModelID: "tableformerv2", Name: "TableFormerV2 (Transformer)", Installed: s.isInstalled("tableformerv2"), SizeBytes: 340000000},
+		
+		// Formula Models
+		{ModelID: "pix2text_formula", Name: "Pix2Text LaTeX-OCR (Fast)", Installed: s.isInstalled("pix2text_formula"), SizeBytes: 18920112},
+		{ModelID: "codeformulav2", Name: "CodeFormulaV2 (Accurate)", Installed: s.isInstalled("codeformulav2"), SizeBytes: 110000000},
 	}, nil
 }
 
