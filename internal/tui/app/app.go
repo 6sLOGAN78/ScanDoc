@@ -87,9 +87,15 @@ type MainModel struct {
 	ModelList        []backend.ModelInfo
 	BenchmarkResults map[string]any
 	IsBenchmarking   bool
+	DownloadingModels map[string]bool
 
 	FocusedPanel FocusPanel
 	SidebarIndex int // flatted index
+}
+
+type downloadMsg struct {
+	modelID string
+	err     error
 }
 
 func NewMainModel(ctrl *controller.Controller) *MainModel {
@@ -102,6 +108,7 @@ func NewMainModel(ctrl *controller.Controller) *MainModel {
 		Commands:         commands.DefaultCommandRegistry,
 		SelectedIndex:    0,
 		BenchmarkResults: make(map[string]any),
+		DownloadingModels: make(map[string]bool),
 		FocusedPanel:     FocusSidebar, // default focus sidebar for immediate navigation
 		SidebarIndex:     0,
 	}
@@ -158,15 +165,39 @@ func tickCmd() tea.Cmd {
 	})
 }
 
+func (m *MainModel) downloadModelCmd(id string) tea.Cmd {
+	return func() tea.Msg {
+		err := m.Controller.Services.Model.DownloadModel(context.Background(), id)
+		return downloadMsg{modelID: id, err: err}
+	}
+}
+
 func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case downloadMsg:
+		m.DownloadingModels[msg.modelID] = false
+		if msg.err != nil {
+			m.State.AddLog(fmt.Sprintf("Failed to download model %s: %v", msg.modelID, msg.err))
+		} else {
+			m.State.AddLog(fmt.Sprintf("Successfully downloaded model %s", msg.modelID))
+		}
+		m.refreshModelList()
+		return m, nil
+
 	case string:
 		if msg == "process_done" {
 			return m, nil
 		}
 		
 	case tickMsg:
-		if m.State.ProcessingStatus == "processing" {
+		isDownloading := false
+		for _, downloading := range m.DownloadingModels {
+			if downloading {
+				isDownloading = true
+				break
+			}
+		}
+		if m.State.ProcessingStatus == "processing" || isDownloading {
 			m.State.TickCount++
 			return m, tickCmd()
 		}
@@ -470,8 +501,10 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "d":
 				if len(m.ModelList) > 0 {
 					id := m.ModelList[m.SelectedIndex].ModelID
-					m.Controller.Services.Model.DownloadModel(context.Background(), id)
-					m.refreshModelList()
+					if !m.DownloadingModels[id] && !m.ModelList[m.SelectedIndex].Installed {
+						m.DownloadingModels[id] = true
+						return m, tea.Batch(m.downloadModelCmd(id), tickCmd())
+					}
 				}
 			case "c":
 				if len(m.ModelList) > 0 {
@@ -696,7 +729,7 @@ func (m *MainModel) View() string {
 	case state.ScreenDocumentInspector:
 		mainContent = document.Render(m.State, m.SelectedIndex)
 	case state.ScreenModelManager:
-		mainContent = models.Render(m.State, m.ModelList, m.SelectedIndex)
+		mainContent = models.Render(m.State, m.ModelList, m.DownloadingModels, m.SelectedIndex)
 	case state.ScreenBenchmark:
 		mainContent = benchmark.Render(m.State, m.BenchmarkResults, m.IsBenchmarking)
 	case state.ScreenExport:

@@ -9,11 +9,11 @@ import (
 	"scandoc/internal/tui/styles"
 )
 
-func Render(st *state.AppState, modelList []backend.ModelInfo, selectedIdx int) string {
+func Render(st *state.AppState, modelList []backend.ModelInfo, downloading map[string]bool, selectedIdx int) string {
 	var b strings.Builder
 	b.WriteString(styles.HeaderStyle.Render(" Model Lifecycle & Local Cache Manager ") + "\n\n")
 
-	b.WriteString(styles.NormalItemStyle.Render("Cache Location: ~/.cache/scandoc/models/") + "\n")
+	b.WriteString(styles.NormalItemStyle.Render("Cache Location: ~/local/scandoc/models") + "\n")
 	if st.IsOffline() {
 		b.WriteString(styles.BadgeWarning.Render("AIR-GAPPED OFFLINE MODE: Network model downloads disabled.") + "\n\n")
 	} else {
@@ -23,9 +23,14 @@ func Render(st *state.AppState, modelList []backend.ModelInfo, selectedIdx int) 
 	if len(modelList) == 0 {
 		b.WriteString(styles.NormalItemStyle.Render("No models registered.") + "\n")
 	} else {
+		spinners := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+		spinner := spinners[st.TickCount%len(spinners)]
+
 		for i, m := range modelList {
 			statusTag := "INSTALLED"
-			if !m.Installed {
+			if downloading != nil && downloading[m.ModelID] {
+				statusTag = fmt.Sprintf("DOWNLOADING %s", spinner)
+			} else if !m.Installed {
 				statusTag = "NOT INSTALLED"
 			}
 
